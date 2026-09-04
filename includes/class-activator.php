@@ -80,6 +80,20 @@ final class Activator {
 			);
 		}
 
+		if ( false === get_option( 'membexa_integrations', false ) ) {
+			add_option(
+				'membexa_integrations',
+				array(
+					'account_mode'     => 'auto',
+					'join_page_id'     => 0,
+					'login_page_id'    => 0,
+					'revoke_on_refund' => 1,
+				)
+			);
+		}
+
+		Account::register_endpoint();
+		flush_rewrite_rules( false );
 		update_option( 'membexa_version', MEMBEXA_VERSION );
 
 		if ( ! wp_next_scheduled( 'membexa_daily_maintenance' ) ) {
@@ -97,5 +111,6 @@ final class Activator {
 		if ( $timestamp ) {
 			wp_unschedule_event( $timestamp, 'membexa_daily_maintenance' );
 		}
+		flush_rewrite_rules( false );
 	}
 }
