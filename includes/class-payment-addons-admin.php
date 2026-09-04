@@ -114,7 +114,12 @@ final class Payment_Addons_Admin {
 			<tbody>
 			<?php foreach ( $membexa_plugin_rows as $row ) : ?>
 				<tr>
-					<td><strong><?php echo esc_html( $row['label'] ); ?></strong><?php if ( $row['version'] ) : ?><br><small><?php echo esc_html( 'v' . $row['version'] ); ?></small><?php endif; ?></td>
+					<td>
+						<strong><?php echo esc_html( $row['label'] ); ?></strong>
+						<?php if ( $row['version'] ) : ?>
+							<br><small><?php echo esc_html( 'v' . $row['version'] ); ?></small>
+						<?php endif; ?>
+					</td>
 					<td><?php echo esc_html( $row['gateway_label'] ); ?></td>
 					<td><?php echo esc_html( $row['status'] ); ?></td>
 					<td><?php echo wp_kses_post( $row['action'] ); ?></td>
@@ -133,7 +138,12 @@ final class Payment_Addons_Admin {
 				<tbody>
 				<?php foreach ( $installed_plugins as $plugin_file => $plugin ) : ?>
 					<tr>
-						<td><strong><?php echo esc_html( $plugin['Name'] ); ?></strong><?php if ( ! empty( $plugin['Version'] ) ) : ?><br><small><?php echo esc_html( 'v' . $plugin['Version'] ); ?></small><?php endif; ?></td>
+						<td>
+							<strong><?php echo esc_html( $plugin['Name'] ); ?></strong>
+							<?php if ( ! empty( $plugin['Version'] ) ) : ?>
+								<br><small><?php echo esc_html( 'v' . $plugin['Version'] ); ?></small>
+							<?php endif; ?>
+						</td>
 						<td><?php echo esc_html( is_plugin_active( $plugin_file ) ? __( 'Active', 'membexa' ) : __( 'Installed', 'membexa' ) ); ?></td>
 						<td><?php echo wp_kses_post( $this->plugin_action_html( $plugin_file, $plugin ) ); ?></td>
 					</tr>
@@ -254,7 +264,12 @@ final class Payment_Addons_Admin {
 				$status      = $plugin_file ? ( is_plugin_active( $plugin_file ) ? __( 'Active', 'membexa' ) : __( 'Installed', 'membexa' ) ) : __( 'Available', 'membexa' );
 				?>
 				<tr>
-					<td><strong><?php echo esc_html( $plugin->name ); ?></strong><?php if ( ! empty( $plugin->version ) ) : ?><br><small><?php echo esc_html( 'v' . $plugin->version ); ?></small><?php endif; ?></td>
+					<td>
+						<strong><?php echo esc_html( $plugin->name ); ?></strong>
+						<?php if ( ! empty( $plugin->version ) ) : ?>
+							<br><small><?php echo esc_html( 'v' . $plugin->version ); ?></small>
+						<?php endif; ?>
+					</td>
 					<td><?php echo wp_kses_post( wp_trim_words( $plugin->short_description, 24 ) ); ?></td>
 					<td><?php echo esc_html( $status ); ?></td>
 					<td><?php echo wp_kses_post( $this->repository_plugin_action_html( $plugin, $plugin_file ) ); ?></td>
@@ -347,9 +362,18 @@ final class Payment_Addons_Admin {
 	private function membexa_addon_rows() {
 		$plugins = get_plugins();
 		$catalog = array(
-			'membexa-stripe/membexa-stripe.php' => array( 'gateway' => 'stripe', 'label' => __( 'Membexa Stripe Gateway', 'membexa' ) ),
-			'membexa-paypal/membexa-paypal.php' => array( 'gateway' => 'paypal', 'label' => __( 'Membexa PayPal Gateway', 'membexa' ) ),
-			'membexa-bkash/membexa-bkash.php'   => array( 'gateway' => 'bkash', 'label' => __( 'Membexa bKash Gateway', 'membexa' ) ),
+			'membexa-stripe/membexa-stripe.php' => array(
+				'gateway' => 'stripe',
+				'label'   => __( 'Membexa Stripe Gateway', 'membexa' ),
+			),
+			'membexa-paypal/membexa-paypal.php' => array(
+				'gateway' => 'paypal',
+				'label'   => __( 'Membexa PayPal Gateway', 'membexa' ),
+			),
+			'membexa-bkash/membexa-bkash.php'   => array(
+				'gateway' => 'bkash',
+				'label'   => __( 'Membexa bKash Gateway', 'membexa' ),
+			),
 		);
 		$rows = array();
 
@@ -561,7 +585,9 @@ final class Payment_Addons_Admin {
 			)
 		);
 		if ( $links ) {
-			?><div class="tablenav"><div class="tablenav-pages"><?php echo wp_kses_post( $links ); ?></div></div><?php
+			?>
+			<div class="tablenav"><div class="tablenav-pages"><?php echo wp_kses_post( $links ); ?></div></div>
+			<?php
 		}
 	}
 
@@ -586,7 +612,9 @@ final class Payment_Addons_Admin {
 		}
 		$type = $messages[ $notice ][0];
 		$text = $messages[ $notice ][1];
-		?><div class="notice notice-<?php echo esc_attr( $type ); ?> inline"><p><?php echo esc_html( $text ); ?></p></div><?php
+		?>
+		<div class="notice notice-<?php echo esc_attr( $type ); ?> inline"><p><?php echo esc_html( $text ); ?></p></div>
+		<?php
 	}
 
 	/** Redirect back to the Payments hub with a result code. */
