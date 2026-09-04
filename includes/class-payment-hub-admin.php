@@ -94,15 +94,20 @@ final class Payment_Hub_Admin {
 
 	/** Show the real WooCommerce connection state without loading gateway classes. */
 	private function woocommerce_connection_card() {
-		$active  = class_exists( 'WooCommerce' );
-		$version = defined( 'WC_VERSION' ) ? WC_VERSION : '';
+		$active        = class_exists( 'WooCommerce' );
+		$version       = defined( 'WC_VERSION' ) ? WC_VERSION : '';
+		$version_label = '';
+		if ( $active && $version ) {
+			/* translators: %s: WooCommerce version number. */
+			$version_label = sprintf( __( 'Version %s', 'membexa' ), $version );
+		}
 		?>
 		<div class="membexa-woo-connection <?php echo $active ? 'is-connected' : 'is-disconnected'; ?>">
 			<div>
 				<span class="membexa-live-dot" aria-hidden="true"></span>
 				<strong><?php echo esc_html( $active ? __( 'WooCommerce connected', 'membexa' ) : __( 'WooCommerce not active', 'membexa' ) ); ?></strong>
-				<?php if ( $active && $version ) : ?>
-					<span><?php echo esc_html( sprintf( __( 'Version %s', 'membexa' ), $version ) ); ?></span>
+				<?php if ( $version_label ) : ?>
+					<span><?php echo esc_html( $version_label ); ?></span>
 				<?php endif; ?>
 			</div>
 			<p><?php echo esc_html( $active ? __( 'Gateway status is read directly from this site. Installing or activating a gateway plugin refreshes WooCommerce on the next page load.', 'membexa' ) : __( 'Activate WooCommerce to use WooCommerce gateway discovery and live payment-method status.', 'membexa' ) ); ?></p>
@@ -319,17 +324,16 @@ final class Payment_Hub_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only search query.
 		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination.
-		$page = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 );
+		$page  = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 );
 		$query = $search ? trim( 'woocommerce ' . $search ) : 'woocommerce payment gateway';
 		$api   = plugins_api(
 			'query_plugins',
 			array(
-				'search'            => $query,
-				'page'              => $page,
-				'per_page'          => 12,
-				'installed_plugins' => array_keys( get_plugins() ),
-				'is_ssl'            => is_ssl(),
-				'fields'            => array(
+				'search'   => $query,
+				'page'     => $page,
+				'per_page' => 12,
+				'is_ssl'   => is_ssl(),
+				'fields'   => array(
 					'short_description' => true,
 					'tested'            => true,
 					'requires'          => true,
@@ -447,9 +451,15 @@ final class Payment_Hub_Admin {
 			<div class="membexa-marketplace-meta">
 				<span><strong><?php esc_html_e( 'Active installs:', 'membexa' ); ?></strong> <?php echo esc_html( $this->format_active_installs( $active ) ); ?></span>
 				<span><strong><?php esc_html_e( 'Rating:', 'membexa' ); ?></strong> <?php echo esc_html( $rating ? $rating . '%' : '—' ); ?></span>
-				<?php if ( $tested ) : ?><span><strong><?php esc_html_e( 'Tested:', 'membexa' ); ?></strong> <?php echo esc_html( $tested ); ?></span><?php endif; ?>
-				<?php if ( $requires_php ) : ?><span><strong><?php esc_html_e( 'PHP:', 'membexa' ); ?></strong> <?php echo esc_html( $requires_php . '+' ); ?></span><?php endif; ?>
-				<?php if ( $last_updated ) : ?><span><strong><?php esc_html_e( 'Updated:', 'membexa' ); ?></strong> <?php echo esc_html( mysql2date( get_option( 'date_format' ), $last_updated ) ); ?></span><?php endif; ?>
+				<?php if ( $tested ) : ?>
+					<span><strong><?php esc_html_e( 'Tested:', 'membexa' ); ?></strong> <?php echo esc_html( $tested ); ?></span>
+				<?php endif; ?>
+				<?php if ( $requires_php ) : ?>
+					<span><strong><?php esc_html_e( 'PHP:', 'membexa' ); ?></strong> <?php echo esc_html( $requires_php . '+' ); ?></span>
+				<?php endif; ?>
+				<?php if ( $last_updated ) : ?>
+					<span><strong><?php esc_html_e( 'Updated:', 'membexa' ); ?></strong> <?php echo esc_html( mysql2date( get_option( 'date_format' ), $last_updated ) ); ?></span>
+				<?php endif; ?>
 			</div>
 			<div class="membexa-marketplace-actions">
 				<?php echo wp_kses_post( $this->repository_plugin_action_html( $plugin, $plugin_file ) ); ?>
@@ -472,15 +482,17 @@ final class Payment_Hub_Admin {
 			return;
 		}
 
+		$big  = 999999999;
 		$base = add_query_arg(
 			array(
 				'page'  => 'membexa-payments',
 				'tab'   => 'discover',
 				's'     => $search,
-				'paged' => '%#%',
+				'paged' => $big,
 			),
 			admin_url( 'admin.php' )
 		);
+		$base = str_replace( (string) $big, '%#%', esc_url( $base ) );
 		echo wp_kses_post(
 			paginate_links(
 				array(
