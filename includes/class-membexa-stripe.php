@@ -197,6 +197,7 @@ final class Stripe {
 
 		Subscriptions::activate( $local_subscription_id, $external_id );
 		$subscription = Subscriptions::get( $local_subscription_id );
+		$currency     = isset( $session['currency'] ) ? $session['currency'] : '';
 		Subscriptions::log_transaction(
 			array(
 				'user_id'         => $subscription ? $subscription->user_id : 0,
@@ -204,8 +205,8 @@ final class Stripe {
 				'gateway'         => 'stripe',
 				'external_id'     => ! empty( $session['payment_intent'] ) ? $session['payment_intent'] : $session['id'],
 				'type'            => 'checkout',
-				'amount'          => isset( $session['amount_total'] ) ? ( (float) $session['amount_total'] / 100 ) : 0,
-				'currency'        => isset( $session['currency'] ) ? $session['currency'] : '',
+				'amount'          => isset( $session['amount_total'] ) ? self::minor_to_major( $session['amount_total'], $currency ) : 0,
+				'currency'        => $currency,
 				'status'          => $payment_status,
 			)
 		);
@@ -223,6 +224,7 @@ final class Stripe {
 		} else {
 			Subscriptions::cancel_local( $local_subscription_id );
 		}
+		$currency = isset( $session['currency'] ) ? $session['currency'] : '';
 		Subscriptions::log_transaction(
 			array(
 				'user_id'         => $subscription ? $subscription->user_id : 0,
@@ -230,8 +232,8 @@ final class Stripe {
 				'gateway'         => 'stripe',
 				'external_id'     => $external_id,
 				'type'            => $succeeded ? 'async_payment' : 'async_payment_failed',
-				'amount'          => isset( $session['amount_total'] ) ? ( (float) $session['amount_total'] / 100 ) : 0,
-				'currency'        => isset( $session['currency'] ) ? $session['currency'] : '',
+				'amount'          => isset( $session['amount_total'] ) ? self::minor_to_major( $session['amount_total'], $currency ) : 0,
+				'currency'        => $currency,
 				'status'          => $succeeded ? 'paid' : 'failed',
 			)
 		);
@@ -268,6 +270,8 @@ final class Stripe {
 			return;
 		}
 		Subscriptions::update_status_by_external_id( $external_subscription_id, $paid ? 'active' : 'past_due' );
+		$amount_key = $paid ? 'amount_paid' : 'amount_due';
+		$currency   = isset( $invoice['currency'] ) ? $invoice['currency'] : '';
 		Subscriptions::log_transaction(
 			array(
 				'user_id'         => $subscription->user_id,
@@ -275,8 +279,8 @@ final class Stripe {
 				'gateway'         => 'stripe',
 				'external_id'     => isset( $invoice['id'] ) ? $invoice['id'] : '',
 				'type'            => $paid ? 'invoice_paid' : 'invoice_failed',
-				'amount'          => isset( $invoice[ $paid ? 'amount_paid' : 'amount_due' ] ) ? ( (float) $invoice[ $paid ? 'amount_paid' : 'amount_due' ] / 100 ) : 0,
-				'currency'        => isset( $invoice['currency'] ) ? $invoice['currency'] : '',
+				'amount'          => isset( $invoice[ $amount_key ] ) ? self::minor_to_major( $invoice[ $amount_key ], $currency ) : 0,
+				'currency'        => $currency,
 				'status'          => $paid ? 'paid' : 'failed',
 			)
 		);
@@ -295,6 +299,13 @@ final class Stripe {
 			return sanitize_text_field( $invoice['parent']['subscription_details']['subscription'] );
 		}
 		return '';
+	}
+
+	private static function minor_to_major( $amount, $currency ) {
+		$zero_decimal = array( 'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF' );
+		$currency     = strtoupper( sanitize_text_field( $currency ) );
+		$amount       = (float) $amount;
+		return in_array( $currency, $zero_decimal, true ) ? $amount : $amount / 100;
 	}
 
 	private static function set_external_id( $subscription_id, $external_id ) {
