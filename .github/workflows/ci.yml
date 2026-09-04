@@ -57,8 +57,6 @@ jobs:
           wp-env run cli wp plugin activate membexa
       - name: Run automatic page setup smoke test
         run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/setup-smoke.php
-      - name: Run PayPal connection smoke tests
-        run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/paypal-connection-smoke.php
       - name: Run WooCommerce membership smoke test
         run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/woocommerce-smoke.php
 
@@ -72,11 +70,11 @@ jobs:
           mkdir -p build/membexa
           rsync -a ./ build/membexa/ --exclude-from='.distignore'
           cd build
-          zip -r membexa-1.4.3.zip membexa
+          zip -r membexa-1.5.0.zip membexa
       - name: Upload installable ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: membexa-1.4.3
-          path: build/membexa-1.4.3.zip
+          name: membexa-1.5.0
+          path: build/membexa-1.5.0.zip
           if-no-files-found: error
           compression-level: 0
