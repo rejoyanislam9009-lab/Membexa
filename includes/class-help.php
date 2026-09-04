@@ -86,28 +86,28 @@ final class Help {
 	private function side_nav( $lang ) {
 		$items = 'bn' === $lang
 			? array(
-				'overview'       => 'Membexa কীভাবে কাজ করে',
-				'quickstart'     => 'দ্রুত সেটআপ',
-				'pages'          => 'পেজ ও শর্টকোড',
-				'plans'          => 'মেম্বারশিপ প্ল্যান',
-				'payments'       => 'পেমেন্ট সেটআপ',
-				'content'        => 'কনটেন্ট রেস্ট্রিকশন',
-				'testing'        => 'টেস্টিং',
-				'manage'         => 'মেম্বার ম্যানেজমেন্ট',
-				'troubleshooting'=> 'সমস্যা সমাধান',
-				'launch'         => 'লাইভ চেকলিস্ট',
+				'overview'        => 'Membexa কীভাবে কাজ করে',
+				'quickstart'      => 'দ্রুত সেটআপ',
+				'pages'           => 'পেজ ও শর্টকোড',
+				'plans'           => 'মেম্বারশিপ প্ল্যান',
+				'payments'        => 'পেমেন্ট সেটআপ',
+				'content'         => 'কনটেন্ট রেস্ট্রিকশন',
+				'testing'         => 'টেস্টিং',
+				'manage'          => 'মেম্বার ম্যানেজমেন্ট',
+				'troubleshooting' => 'সমস্যা সমাধান',
+				'launch'          => 'লাইভ চেকলিস্ট',
 			)
 			: array(
-				'overview'       => 'How Membexa works',
-				'quickstart'     => 'Quick start',
-				'pages'          => 'Pages & shortcodes',
-				'plans'          => 'Membership plans',
-				'payments'       => 'Payment setup',
-				'content'        => 'Content restriction',
-				'testing'        => 'Testing',
-				'manage'         => 'Member management',
-				'troubleshooting'=> 'Troubleshooting',
-				'launch'         => 'Go-live checklist',
+				'overview'        => 'How Membexa works',
+				'quickstart'      => 'Quick start',
+				'pages'           => 'Pages & shortcodes',
+				'plans'           => 'Membership plans',
+				'payments'        => 'Payment setup',
+				'content'         => 'Content restriction',
+				'testing'         => 'Testing',
+				'manage'          => 'Member management',
+				'troubleshooting' => 'Troubleshooting',
+				'launch'          => 'Go-live checklist',
 			);
 		?>
 		<aside class="membexa-help-nav" aria-label="<?php esc_attr_e( 'Help sections', 'membexa' ); ?>">
@@ -264,7 +264,7 @@ final class Help {
 					<tr><td><?php esc_html_e( 'PayPal renewals/status do not update', 'membexa' ); ?></td><td><?php esc_html_e( 'Verify the PayPal webhook endpoint, event subscriptions, and saved Webhook ID.', 'membexa' ); ?></td></tr>
 					<tr><td><?php esc_html_e( 'bKash does not appear', 'membexa' ); ?></td><td><?php esc_html_e( 'Confirm merchant credentials are complete and the plan uses BDT with One-time or Lifetime billing.', 'membexa' ); ?></td></tr>
 					<tr><td><?php esc_html_e( 'Protected content is still hidden', 'membexa' ); ?></td><td><?php esc_html_e( 'Confirm the member subscription is active/trialing and the protected content has that exact plan selected under Allowed Plans.', 'membexa' ); ?></td></tr>
-			</tbody>
+				</tbody>
 			</table>
 		</section>
 
@@ -346,7 +346,7 @@ final class Help {
 					<tr><td>Stripe</td><td><?php esc_html_e( 'Stripe Price ID দিয়ে supported', 'membexa' ); ?></td><td><?php esc_html_e( 'Recurring Stripe Price ID দিয়ে supported', 'membexa' ); ?></td></tr>
 					<tr><td>PayPal</td><td><?php esc_html_e( 'Supported; PayPal Plan ID লাগে না', 'membexa' ); ?></td><td><?php esc_html_e( 'Supported; PayPal Plan ID লাগবে', 'membexa' ); ?></td></tr>
 					<tr><td>bKash</td><td><?php esc_html_e( 'শুধু BDT হলে supported', 'membexa' ); ?></td><td><?php esc_html_e( 'এই version-এ নেই', 'membexa' ); ?></td></tr>
-			</tbody>
+				</tbody>
 			</table>
 		</section>
 
@@ -431,7 +431,7 @@ final class Help {
 					<tr><td><?php esc_html_e( 'PayPal renewal/status update হচ্ছে না', 'membexa' ); ?></td><td><?php esc_html_e( 'PayPal webhook endpoint, subscribed events এবং saved Webhook ID যাচাই করুন।', 'membexa' ); ?></td></tr>
 					<tr><td><?php esc_html_e( 'bKash দেখাচ্ছে না', 'membexa' ); ?></td><td><?php esc_html_e( 'Merchant credentials সম্পূর্ণ কিনা এবং Plan BDT + One-time/Lifetime কিনা দেখুন।', 'membexa' ); ?></td></tr>
 					<tr><td><?php esc_html_e( 'Active member content দেখতে পারছে না', 'membexa' ); ?></td><td><?php esc_html_e( 'Subscription active/trialing কিনা এবং protected content-এর Allowed Plans-এ একই plan selected কিনা দেখুন।', 'membexa' ); ?></td></tr>
-			</tbody>
+				</tbody>
 			</table>
 		</section>
 
