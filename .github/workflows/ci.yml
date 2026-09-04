@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['7.4', '8.2', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer lint
+      - run: composer phpcs
+
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare WordPress.org-style plugin directory
+        run: |
+          mkdir -p build/membexa
+          rsync -a ./ build/membexa/ --exclude-from='.distignore'
+      - name: Run WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1.1.9
+        with:
+          build-dir: './build/membexa'
+          slug: 'membexa'
+          ignore-warnings: true
+
+  package:
+    runs-on: ubuntu-latest
+    needs: [quality, plugin-check]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build installable plugin ZIP
+        run: |
+          mkdir -p build/membexa
+          rsync -a ./ build/membexa/ --exclude-from='.distignore'
+          cd build
+          zip -r membexa-1.0.0.zip membexa
+      - name: Upload installable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: membexa-1.0.0
+          path: build/membexa-1.0.0.zip
+          if-no-files-found: error
+          compression-level: 0
