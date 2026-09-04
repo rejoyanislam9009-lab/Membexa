@@ -92,6 +92,8 @@ jobs:
       - name: Confirm core contains and loads no gateway implementation
         run: |
           wp-env run cli wp eval 'foreach ( array( "Stripe" => "class-stripe.php", "PayPal" => "class-paypal.php", "PayPal_Connection" => "class-paypal-connection.php", "Bkash" => "class-bkash.php" ) as $class => $file ) { $fqcn = "\\Membexa\\" . $class; if ( class_exists( $fqcn, false ) || file_exists( MEMBEXA_DIR . "includes/" . $file ) ) { fwrite( STDERR, "Core unexpectedly contains or loaded gateway implementation: {$class}\n" ); exit( 1 ); } } if ( \Membexa\Gateways::all() ) { fwrite( STDERR, "Core unexpectedly registered a payment gateway.\n" ); exit( 1 ); } echo "Membexa Core gateway isolation passed.\n";'
+      - name: Run Payments add-on hub smoke test
+        run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/payment-admin-smoke.php
       - name: Activate modular payment add-ons
         run: wp-env run cli wp plugin activate membexa-stripe membexa-paypal membexa-bkash
       - name: Run modular payment add-on smoke test
@@ -117,15 +119,15 @@ jobs:
           rsync -a addons/membexa-paypal/ build/membexa-paypal/
           rsync -a addons/membexa-bkash/ build/membexa-bkash/
           cd build
-          zip -r membexa-1.5.0.zip membexa
+          zip -r membexa-1.6.0.zip membexa
           zip -r membexa-stripe-1.0.0.zip membexa-stripe
           zip -r membexa-paypal-1.0.0.zip membexa-paypal
           zip -r membexa-bkash-1.0.0.zip membexa-bkash
       - name: Upload Membexa Core
         uses: actions/upload-artifact@v4
         with:
-          name: membexa-1.5.0
-          path: build/membexa-1.5.0.zip
+          name: membexa-1.6.0
+          path: build/membexa-1.6.0.zip
           if-no-files-found: error
           compression-level: 0
       - name: Upload Stripe add-on

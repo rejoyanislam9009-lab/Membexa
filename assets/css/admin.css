@@ -65,9 +65,39 @@
 	margin: 4px 0;
 }
 
+.membexa-payment-table {
+	max-width: 1200px;
+	margin: 12px 0 24px;
+}
+
+.membexa-payment-table th,
+.membexa-payment-table td {
+	vertical-align: middle;
+}
+
+.membexa-payment-search {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin: 14px 0 18px;
+}
+
+.membexa-payment-search .button {
+	margin: 0;
+}
+
 @media (max-width: 782px) {
 	.membexa-stat-grid {
 		grid-template-columns: 1fr 1fr;
+	}
+
+	.membexa-payment-search {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.membexa-payment-search .regular-text {
+		width: 100%;
 	}
 }
 
