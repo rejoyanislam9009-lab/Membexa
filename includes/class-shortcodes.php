@@ -108,6 +108,7 @@ final class Shortcodes {
 	 * @param int    $user_id WordPress user ID.
 	 * @param array  $plan    Membership plan data.
 	 * @param string $gateway Selected gateway.
+	 * @return void
 	 */
 	private function begin_plan( $user_id, $plan, $gateway = '' ) {
 		if ( Subscriptions::user_has_plan( $user_id, array( $plan['id'] ) ) ) {
@@ -186,24 +187,7 @@ final class Shortcodes {
 						</ul>
 					<?php endif; ?>
 					<?php if ( is_user_logged_in() ) : ?>
-						<?php if ( 'free' !== $plan['billing'] && 0.0 !== (float) $plan['price'] && empty( $gateways ) ) : ?>
-							<p class="membexa-notice"><?php esc_html_e( 'No payment method is currently configured for this plan.', 'membexa' ); ?></p>
-						<?php else : ?>
-							<form method="post">
-								<?php wp_nonce_field( 'membexa_frontend_action', 'membexa_nonce' ); ?>
-								<input type="hidden" name="membexa_action" value="checkout">
-								<input type="hidden" name="plan_id" value="<?php echo esc_attr( $plan['id'] ); ?>">
-								<?php if ( ! empty( $gateways ) ) : ?>
-									<label for="membexa-gateway-<?php echo esc_attr( $plan['id'] ); ?>"><?php esc_html_e( 'Pay with', 'membexa' ); ?></label>
-									<select id="membexa-gateway-<?php echo esc_attr( $plan['id'] ); ?>" name="payment_gateway">
-										<?php foreach ( $gateways as $gateway_key => $gateway_label ) : ?>
-											<option value="<?php echo esc_attr( $gateway_key ); ?>"><?php echo esc_html( $gateway_label ); ?></option>
-										<?php endforeach; ?>
-									</select>
-								<?php endif; ?>
-								<button class="membexa-button" type="submit"><?php esc_html_e( 'Choose plan', 'membexa' ); ?></button>
-							</form>
-						<?php endif; ?>
+						<?php $this->pricing_checkout_form( $plan, $gateways ); ?>
 					<?php else : ?>
 						<a class="membexa-button" href="<?php echo esc_url( add_query_arg( 'membexa_plan', $plan['id'], $register_url ) ); ?>"><?php esc_html_e( 'Join now', 'membexa' ); ?></a>
 					<?php endif; ?>
@@ -212,6 +196,39 @@ final class Shortcodes {
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render the logged-in checkout form for one pricing card.
+	 *
+	 * @param array $plan     Plan data.
+	 * @param array $gateways Compatible gateways.
+	 * @return void
+	 */
+	private function pricing_checkout_form( $plan, $gateways ) {
+		$is_paid = 'free' !== $plan['billing'] && 0.0 !== (float) $plan['price'];
+		if ( $is_paid && empty( $gateways ) ) {
+			?>
+			<p class="membexa-notice"><?php esc_html_e( 'No payment method is currently configured for this plan.', 'membexa' ); ?></p>
+			<?php
+			return;
+		}
+		?>
+		<form method="post" class="membexa-checkout-form">
+			<?php wp_nonce_field( 'membexa_frontend_action', 'membexa_nonce' ); ?>
+			<input type="hidden" name="membexa_action" value="checkout">
+			<input type="hidden" name="plan_id" value="<?php echo esc_attr( $plan['id'] ); ?>">
+			<?php if ( ! empty( $gateways ) ) : ?>
+				<label for="membexa-gateway-<?php echo esc_attr( $plan['id'] ); ?>"><?php esc_html_e( 'Pay with', 'membexa' ); ?></label>
+				<select id="membexa-gateway-<?php echo esc_attr( $plan['id'] ); ?>" name="payment_gateway">
+					<?php foreach ( $gateways as $gateway_key => $gateway_label ) : ?>
+						<option value="<?php echo esc_attr( $gateway_key ); ?>"><?php echo esc_html( $gateway_label ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			<?php endif; ?>
+			<button class="membexa-button" type="submit"><?php esc_html_e( 'Choose plan', 'membexa' ); ?></button>
+		</form>
+		<?php
 	}
 
 	/** Render the registration form. */
@@ -255,7 +272,7 @@ final class Shortcodes {
 							<option value="<?php echo esc_attr( $gateway_key ); ?>"><?php echo esc_html( $gateway_label ); ?></option>
 						<?php endforeach; ?>
 					</select>
-					<small><?php esc_html_e( 'Only payment methods compatible with the selected plan will be accepted at checkout. bKash requires BDT one-time or lifetime billing.', 'membexa' ); ?></small>
+					<small><?php esc_html_e( 'Only payment methods compatible with the selected plan are accepted. bKash requires BDT one-time or lifetime billing.', 'membexa' ); ?></small>
 				</p>
 			<?php endif; ?>
 			<p><button class="membexa-button" type="submit"><?php esc_html_e( 'Create account', 'membexa' ); ?></button></p>
@@ -294,13 +311,25 @@ final class Shortcodes {
 				<p><?php esc_html_e( 'You do not have a membership yet.', 'membexa' ); ?></p>
 			<?php else : ?>
 				<table class="membexa-table">
-					<thead><tr><th><?php esc_html_e( 'Plan', 'membexa' ); ?></th><th><?php esc_html_e( 'Status', 'membexa' ); ?></th><th><?php esc_html_e( 'Renewal / End', 'membexa' ); ?></th><th><?php esc_html_e( 'Action', 'membexa' ); ?></th></tr></thead>
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Plan', 'membexa' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'membexa' ); ?></th>
+							<th><?php esc_html_e( 'Renewal / End', 'membexa' ); ?></th>
+							<th><?php esc_html_e( 'Action', 'membexa' ); ?></th>
+						</tr>
+					</thead>
 					<tbody>
 						<?php foreach ( $subscriptions as $subscription ) : ?>
 							<?php $plan = Plan::get( $subscription->plan_id ); ?>
 							<tr>
 								<td><?php echo esc_html( $plan ? $plan['name'] : __( 'Deleted plan', 'membexa' ) ); ?></td>
-								<td><?php echo esc_html( ucfirst( str_replace( '_', ' ', $subscription->status ) ) ); ?><?php if ( $subscription->cancel_at_period_end ) : ?> <small><?php esc_html_e( '(cancels at period end)', 'membexa' ); ?></small><?php endif; ?></td>
+								<td>
+									<?php echo esc_html( ucfirst( str_replace( '_', ' ', $subscription->status ) ) ); ?>
+									<?php if ( $subscription->cancel_at_period_end ) : ?>
+										<small><?php esc_html_e( '(cancels at period end)', 'membexa' ); ?></small>
+									<?php endif; ?>
+								</td>
 								<td><?php echo $subscription->ends_at ? esc_html( get_date_from_gmt( $subscription->ends_at, get_option( 'date_format' ) ) ) : '—'; ?></td>
 								<td>
 									<?php if ( in_array( $subscription->status, array( 'active', 'trialing' ), true ) && ! $subscription->cancel_at_period_end ) : ?>
@@ -310,7 +339,9 @@ final class Shortcodes {
 											<input type="hidden" name="subscription_id" value="<?php echo esc_attr( $subscription->id ); ?>">
 											<button type="submit" class="membexa-link-button"><?php esc_html_e( 'Cancel', 'membexa' ); ?></button>
 										</form>
-									<?php else : ?>—<?php endif; ?>
+									<?php else : ?>
+										—
+									<?php endif; ?>
 								</td>
 							</tr>
 						<?php endforeach; ?>
