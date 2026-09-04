@@ -1,4 +1,4 @@
-=== Membexa – Membership & Subscription Plugin ===
+=== Membexa – Membership & Subscriptions ===
 Contributors: wpzenora
 Tags: membership, subscriptions, content restriction, stripe, members
 Requires at least: 6.4
