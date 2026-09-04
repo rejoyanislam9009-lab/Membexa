@@ -73,8 +73,7 @@ final class Plugin {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
-			Account::register_endpoint();
-			flush_rewrite_rules( false );
+			update_option( 'membexa_flush_rewrite_rules', 1, false );
 			update_option( 'membexa_version', MEMBEXA_VERSION );
 		}
 
