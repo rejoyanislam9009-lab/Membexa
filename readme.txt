@@ -20,7 +20,7 @@ Membexa is a membership and subscription plugin designed to feel at home inside 
 * Member registration, login, pricing, and account shortcodes.
 * Per-post and per-page content restrictions by membership plan.
 * Stripe-hosted Checkout for paid and recurring plans.
-* Signed Stripe webhook handling for activation, renewal status, failed payments, and cancellations.
+* Signed Stripe webhook handling for activation, delayed payments, renewals, failed payments, and cancellations.
 * Member self-service cancellation for Stripe subscriptions.
 * Per-plan currency and Stripe Price IDs for international pricing.
 * WordPress-native administration screens for subscriptions, members, and settings.
@@ -52,7 +52,7 @@ Stripe is a third-party service and is not operated by the Membexa plugin author
 5. Create a registration page with `[membexa_register]` and an account page with `[membexa_account]`.
 6. Select the pricing and account pages under Membexa > Settings > General.
 7. For paid plans, configure Stripe under Membexa > Settings > Payments and add the Stripe Price ID to each paid plan.
-8. Add the displayed webhook endpoint to Stripe and subscribe it to `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, and `invoice.payment_failed`.
+8. Add the displayed webhook endpoint to Stripe and subscribe it to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, and `invoice.payment_failed`.
 9. Restrict posts or pages from the Membexa Access panel in the editor.
 
 For production sites, Stripe secrets can be defined in `wp-config.php` using `MEMBEXA_STRIPE_SECRET_KEY` and `MEMBEXA_STRIPE_WEBHOOK_SECRET`.
@@ -99,5 +99,5 @@ When Stripe is configured, checkout requests are sent to Stripe and subscription
 * Membership plans and WordPress-native admin screens.
 * Registration, pricing, login, and account shortcodes.
 * Content restrictions by plan.
-* Stripe Checkout and signed webhook lifecycle handling.
+* Stripe Checkout with delayed-payment, renewal, failure, and signed webhook lifecycle handling.
 * Privacy exporter/eraser and uninstall controls.
