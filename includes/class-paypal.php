@@ -216,8 +216,8 @@ final class PayPal {
 			self::redirect_account( 'payment_failed' );
 		}
 
-		$capture = isset( $response['purchase_units'][0]['payments']['captures'][0] ) ? $response['purchase_units'][0]['payments']['captures'][0] : array();
-		$amount  = isset( $capture['amount']['value'] ) ? (float) $capture['amount']['value'] : 0;
+		$capture  = isset( $response['purchase_units'][0]['payments']['captures'][0] ) ? $response['purchase_units'][0]['payments']['captures'][0] : array();
+		$amount   = isset( $capture['amount']['value'] ) ? (float) $capture['amount']['value'] : 0;
 		$currency = isset( $capture['amount']['currency_code'] ) ? strtoupper( sanitize_text_field( $capture['amount']['currency_code'] ) ) : '';
 		if (
 			empty( $capture['id'] )
@@ -297,7 +297,13 @@ final class PayPal {
 		}
 		$key = 'membexa_paypal_evt_' . md5( $event_id );
 		if ( get_transient( $key ) ) {
-			return new WP_REST_Response( array( 'received' => true, 'duplicate' => true ), 200 );
+			return new WP_REST_Response(
+				array(
+					'received'  => true,
+					'duplicate' => true,
+				),
+				200
+			);
 		}
 
 		$type     = isset( $event['event_type'] ) ? sanitize_text_field( $event['event_type'] ) : '';
