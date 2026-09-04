@@ -4,7 +4,7 @@ Tags: membership, subscriptions, stripe, paypal, bkash
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,7 +83,7 @@ For monthly or yearly memberships, Membexa sends the configured PayPal Plan ID, 
 
 Membexa includes a PayPal Setup Assistant. Standard setup opens the official PayPal Developer Dashboard so the administrator can create or select a REST app and enter the Client ID, Client Secret, and Webhook ID in Membexa.
 
-Membexa 1.4.1 adds an explicit Verify PayPal Connection action. The check authenticates to the selected PayPal Sandbox or Live REST API using the saved application credentials, retrieves the saved webhook configuration from PayPal, confirms that its URL matches this WordPress site's Membexa PayPal endpoint, and verifies that all webhook events required by Membexa are subscribed. The resulting status is stored without storing OAuth access tokens and is invalidated automatically when the effective PayPal credentials, Webhook ID, or Sandbox/Live mode changes.
+Membexa 1.4.1 and later include an explicit Verify PayPal Connection action. The check authenticates to the selected PayPal Sandbox or Live REST API using the saved application credentials, retrieves the saved webhook configuration from PayPal, confirms that its URL matches this WordPress site's Membexa PayPal endpoint, and verifies that all webhook events required by Membexa are subscribed. The resulting status is stored without storing OAuth access tokens and is invalidated automatically when the effective PayPal credentials, Webhook ID, or Sandbox/Live mode changes.
 
 PayPal also documents an approved Partner Referrals / software-onboarding flow that can share a consenting seller's REST API credentials with downloadable ecommerce software after PayPal login and approval. Membexa does not ship a PayPal partner secret inside the plugin. Automatic partner onboarding is shown only when the distributor/site owner has separately configured an approved secure partner onboarding URL through `MEMBEXA_PAYPAL_PARTNER_CONNECT_URL` or the `membexa_paypal_partner_connect_url` filter. Without that approved partner setup, Membexa safely uses the standard Developer Dashboard flow and does not scrape or infer credentials from a PayPal login session.
 
@@ -197,7 +197,7 @@ Yes. A free plan activates immediately after registration or selection and requi
 
 = Which payment methods are included? =
 
-Version 1.4.1 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
+Version 1.4.2 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
 
 = Does PayPal support recurring memberships? =
 
@@ -205,7 +205,7 @@ Yes. Monthly and yearly Membexa plans can use PayPal Subscriptions when the plan
 
 = Does bKash support recurring memberships in Membexa? =
 
-Not in version 1.4.1. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
+Not in version 1.4.2. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
 
 = Does Membexa replace WooCommerce? =
 
@@ -226,6 +226,10 @@ Membexa stores WordPress user IDs, membership plan IDs, subscription status, pay
 When a payment gateway is configured and selected by a member, payment-related data described in the relevant External service section above is sent to that third-party provider. Site owners are responsible for disclosing their selected payment providers, legal basis, and retention practices in their own privacy policy.
 
 == Changelog ==
+
+= 1.4.2 =
+* Fixed the PayPal Verify Connection action nonce URL so WordPress no longer shows "The link you followed has expired" when the generated verification URL is transported through JSON/JavaScript.
+* Added an automated PayPal verification nonce regression smoke test.
 
 = 1.4.1 =
 * Added a Verify PayPal Connection action to the Payments settings screen.
