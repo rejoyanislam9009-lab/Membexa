@@ -46,7 +46,7 @@ final class Access {
 		<?php foreach ( Plan::all() as $plan ) : ?>
 			<label style="display:block;margin:4px 0;"><input type="checkbox" name="membexa_plan_ids[]" value="<?php echo esc_attr( $plan['id'] ); ?>" <?php checked( in_array( (int) $plan['id'], $selected, true ) ); ?>> <?php echo esc_html( $plan['name'] ); ?></label>
 		<?php endforeach; ?>
-		<p class="description"><?php esc_html_e( 'If no plan is selected, restricted content is hidden from every non-administrator.', 'membexa' ); ?></p>
+		<p class="description"><?php esc_html_e( 'If no plan is selected, restricted content is hidden from every visitor who cannot edit the post.', 'membexa' ); ?></p>
 		<?php
 	}
 
@@ -70,7 +70,7 @@ final class Access {
 			return true;
 		}
 		$user_id = $user_id ? absint( $user_id ) : get_current_user_id();
-		if ( $user_id && user_can( $user_id, 'manage_options' ) ) {
+		if ( $user_id && user_can( $user_id, 'edit_post', $post_id ) ) {
 			return true;
 		}
 		$plans = array_map( 'absint', (array) get_post_meta( $post_id, '_membexa_plan_ids', true ) );
