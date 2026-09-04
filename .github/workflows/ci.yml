@@ -39,6 +39,30 @@ jobs:
           slug: 'membexa'
           ignore-warnings: true
 
+  addon-plugin-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - slug: membexa-stripe
+            source: addons/membexa-stripe
+          - slug: membexa-paypal
+            source: addons/membexa-paypal
+          - slug: membexa-bkash
+            source: addons/membexa-bkash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare add-on directory
+        run: |
+          mkdir -p "build/${{ matrix.slug }}"
+          rsync -a "${{ matrix.source }}/" "build/${{ matrix.slug }}/"
+      - name: Run WordPress Plugin Check for add-on
+        uses: wordpress/plugin-check-action@v1.1.9
+        with:
+          build-dir: './build/${{ matrix.slug }}'
+          slug: '${{ matrix.slug }}'
+          ignore-warnings: true
+
   woocommerce-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -55,8 +79,9 @@ jobs:
           wp-env start --update
           wp-env run cli wp plugin install woocommerce --activate
           wp-env run cli wp plugin activate membexa
-      - name: Confirm core has no active built-in gateways
-        run: wp-env run cli wp eval 'if ( \Membexa\Gateways::all() ) { fwrite( STDERR, "Core unexpectedly registered a payment gateway.\n" ); exit( 1 ); } echo "Membexa Core has no active built-in payment gateways.\n";'
+      - name: Confirm core contains and loads no gateway implementation
+        run: |
+          wp-env run cli wp eval 'foreach ( array( "Stripe" => "class-stripe.php", "PayPal" => "class-paypal.php", "PayPal_Connection" => "class-paypal-connection.php", "Bkash" => "class-bkash.php" ) as $class => $file ) { $fqcn = "\\Membexa\\" . $class; if ( class_exists( $fqcn, false ) || file_exists( MEMBEXA_DIR . "includes/" . $file ) ) { fwrite( STDERR, "Core unexpectedly contains or loaded gateway implementation: {$class}\n" ); exit( 1 ); } } if ( \Membexa\Gateways::all() ) { fwrite( STDERR, "Core unexpectedly registered a payment gateway.\n" ); exit( 1 ); } echo "Membexa Core gateway isolation passed.\n";'
       - name: Activate modular payment add-ons
         run: wp-env run cli wp plugin activate membexa-stripe membexa-paypal membexa-bkash
       - name: Run modular payment add-on smoke test
@@ -70,7 +95,7 @@ jobs:
 
   package:
     runs-on: ubuntu-latest
-    needs: [quality, plugin-check, woocommerce-smoke]
+    needs: [quality, plugin-check, addon-plugin-check, woocommerce-smoke]
     steps:
       - uses: actions/checkout@v4
       - name: Build installable ZIPs
