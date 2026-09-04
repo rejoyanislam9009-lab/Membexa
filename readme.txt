@@ -4,7 +4,7 @@ Tags: membership, subscriptions, woocommerce, access control, members
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.6.1
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,7 +16,7 @@ Membexa is a WordPress-native membership and subscription system. Membexa Core m
 
 Starting with version 1.5.0, payment providers are modular. Membexa Core does not require a payment gateway and does not expose provider credentials as part of the core payment setup flow. Install only the separate Membexa gateway add-ons that a site actually needs.
 
-Version 1.6.0 adds a unified Membexa Payments hub. Version 1.6.1 hardens that hub so third-party WooCommerce gateway loading problems are contained instead of crashing the Membexa Payments screen. The Add-ons tab now detects installed payment extensions from plugin metadata without initializing WooCommerce gateway classes.
+Version 1.7.0 rebuilds the Payments hub as a live WooCommerce payment workspace. The screen now shows a real WooCommerce connection state, reads registered gateway methods directly from WooCommerce, searches the official WordPress.org Plugins API, displays real plugin metadata, installs and activates gateway plugins through WordPress core, and then returns to the live WooCommerce gateway list for configuration.
 
 = Core features =
 
@@ -30,10 +30,14 @@ Version 1.6.0 adds a unified Membexa Payments hub. Version 1.6.1 hardens that hu
 * WooCommerce order lifecycle and optional refund/cancellation revocation.
 * WooCommerce Subscriptions lifecycle synchronization when that extension is installed.
 * Compatible with simple, variable, virtual, and downloadable WooCommerce products.
-* Payments hub with Add-ons, WooCommerce Gateways, and Discover tabs.
-* Lists payment gateways successfully registered by WooCommerce, including disabled methods.
-* Detects manually installed WooCommerce payment add-ons from plugin metadata without loading their gateway classes on the Add-ons tab.
-* One-click install and activation for compatible payment gateway plugins returned by the official WordPress.org plugin API.
+* Live Payments hub with Add-ons, WooCommerce Gateways, and Discover tabs.
+* Real WooCommerce connection indicator with the installed WooCommerce version.
+* Live gateway counts and enabled/disabled state read from WooCommerce.
+* Sequential WooCommerce gateway list with source-plugin identification and Configure links.
+* Real WordPress.org gateway search with plugin name, description, icon, rating, active installs, compatibility metadata, and last update date.
+* One-click install and activation through WordPress core, followed by a live WooCommerce gateway refresh.
+* Stricter installed-gateway detection that excludes Membexa Core and unrelated WooCommerce checkout utilities.
+* Fault containment so a broken third-party gateway cannot crash the entire Payments screen.
 * Payment add-on manager showing installed Membexa gateway extensions and setup status.
 * Public gateway registration API so additional payment add-ons can integrate without modifying Membexa Core.
 * Gateway-specific plan fields appear only while the matching add-on is active.
@@ -45,9 +49,7 @@ Version 1.6.0 adds a unified Membexa Payments hub. Version 1.6.1 hardens that hu
 
 == Modular payments ==
 
-Membexa 1.5.0 separated payment providers from the core plugin. Membexa 1.6.x keeps that modular architecture and adds a single administration hub for payment add-ons and WooCommerce gateways.
-
-Standalone Membexa plans can use separately installed Membexa gateway add-ons. The release suite includes independent add-ons for:
+Membexa keeps payment providers separate from the membership core. Standalone Membexa plans can use separately installed Membexa gateway add-ons. The release suite includes independent add-ons for:
 
 * Membexa Stripe Gateway
 * Membexa PayPal Gateway
@@ -55,9 +57,9 @@ Standalone Membexa plans can use separately installed Membexa gateway add-ons. T
 
 When a gateway add-on is inactive, it is not offered at Membexa checkout and its plan-specific fields are not shown.
 
-WooCommerce-connected products continue to use WooCommerce checkout. That means compatible WooCommerce payment gateway plugins can be used for WooCommerce product purchases without being bundled into Membexa Core.
+WooCommerce-connected products continue to use WooCommerce checkout. Compatible WooCommerce payment gateway plugins can therefore be used for WooCommerce product purchases without being bundled into Membexa Core.
 
-Existing Membexa 1.4.x payment credentials are preserved during upgrade. Previously enabled gateway flags are staged for migration and restored automatically when the matching gateway add-on is installed and activated.
+Existing Membexa 1.4.x payment credentials are preserved during upgrade. Previously enabled gateway flags are staged for migration and restored automatically when the matching Membexa gateway add-on is installed and activated.
 
 == Automatic page setup ==
 
@@ -74,30 +76,48 @@ Administrators can run the process again from Membexa > Setup > Create / Repair 
 
 Open Membexa > Payments.
 
+The connection panel at the top reports whether WooCommerce is active and shows the WooCommerce version. The status is taken from the current WordPress installation; it is not a simulated value.
+
 = Add-ons =
 
-The Add-ons tab shows the separate Membexa Stripe, PayPal, and bKash add-ons, plus detected WooCommerce payment add-on plugins installed on the WordPress site. In version 1.6.1 this detection is metadata-only, so merely opening Add-ons does not initialize every WooCommerce gateway class. This prevents a broken or incompatible third-party gateway from taking down the Membexa Payments page.
+The Add-ons tab shows the separate Membexa Stripe, PayPal, and bKash add-ons plus installed WooCommerce payment gateway plugins that can be identified safely from plugin metadata.
+
+Detection is intentionally stricter than a general text search. Membexa Core itself and unrelated WooCommerce tools are excluded even if their descriptions mention checkout or payments. Opening this tab does not instantiate every third-party WooCommerce gateway class.
 
 = WooCommerce Gateways =
 
-This tab reads WooCommerce's live payment gateway registry and lists gateway methods WooCommerce can initialize successfully. It shows gateway ID, source plugin, enabled/disabled status, and a direct Configure button. Unexpected third-party gateway errors are contained and displayed as a normal admin notice instead of an uncaught fatal error.
+This tab reads WooCommerce's live payment gateway registry. It shows the number of registered, enabled, and disabled gateway methods, then lists the methods in sequence with gateway title, ID, source plugin, live enabled/disabled state, and a direct Configure button.
+
+A payment plugin may be Active in WordPress while its WooCommerce gateway is Disabled. That is normal until the gateway is configured and enabled in WooCommerce. Membexa does not automatically enable an unconfigured payment method because many providers require credentials, merchant approval, webhooks, or other setup before they are safe to offer at checkout.
+
+Unexpected third-party gateway errors are contained and displayed as an admin notice instead of causing an uncaught fatal error on the Membexa Payments page.
 
 = Discover =
 
-The Discover tab uses the official WordPress.org plugin API to search for WooCommerce payment gateway plugins. Administrators with WordPress plugin-install permissions can install and activate a compatible result directly from Membexa. WordPress performs the normal capability, nonce, package download, installation, and activation checks.
+The Discover tab uses WordPress core `plugins_api()` against the official WordPress.org Plugins API. Search results display real plugin metadata returned by WordPress.org, including name, short description, plugin icon when available, active-install count, rating, tested WordPress version, PHP requirement, and last update date.
 
-Membexa does not download executable payment plugins from arbitrary third-party servers. One-click discovery installation is limited to packages returned by the official WordPress.org plugin API. Gateway ZIPs from other sources can still be uploaded manually through the standard WordPress plugin uploader, after which Membexa detects them when possible.
+Search results are filtered to plugins whose identity clearly indicates a WooCommerce payment gateway or known payment provider. Each result has a WordPress.org details link and one of these actions:
+
+* Install & activate — downloads through WordPress core and activates the installed plugin.
+* Activate in WordPress — for an already installed but inactive gateway plugin.
+* View live gateways — for an already active gateway plugin.
+
+After a successful installation or activation, Membexa redirects to WooCommerce Gateways so the real methods registered by that plugin can be seen immediately. Provider credentials and gateway enablement are then handled from the normal WooCommerce Configure screen.
+
+Membexa does not download executable payment plugins from arbitrary third-party servers. One-click discovery installation is limited to packages returned by the official WordPress.org plugin API. Gateway ZIPs from other sources can still be uploaded manually through the standard WordPress plugin uploader.
 
 == Payment add-on setup ==
 
 1. Install and activate Membexa Core.
-2. Open Membexa > Payments > Add-ons.
-3. For standalone Membexa billing, upload and activate only the Membexa gateway add-on or add-ons needed by the site.
-4. Each active Membexa gateway adds its own settings page under the Membexa menu.
-5. For WooCommerce-based memberships, open Payments > WooCommerce Gateways to see WooCommerce payment methods that initialize successfully.
-6. Open Payments > Discover to search WordPress.org and install a compatible WooCommerce payment gateway directly from Membexa.
-7. A WooCommerce gateway installed manually through WordPress is automatically reflected after activation when its metadata or WooCommerce registration identifies it as a payment extension.
-8. Test payment providers with sandbox/test credentials before going live.
+2. Open Membexa > Payments.
+3. Confirm the top connection panel says WooCommerce connected if WooCommerce-based billing is required.
+4. For standalone Membexa billing, upload and activate only the Membexa gateway add-on or add-ons needed by the site.
+5. For WooCommerce billing, open Discover and search for the provider name, for example Stripe, PayPal, bKash, SSLCommerz, Paystack, or Razorpay.
+6. Click Install & activate. WordPress performs the normal capability, nonce, package download, installation, and activation checks.
+7. Membexa returns to WooCommerce Gateways and displays the live gateway methods registered by the new plugin.
+8. Click Configure beside the required gateway and complete the provider credentials/settings in WooCommerce.
+9. Enable the gateway only after its required credentials and provider setup are complete.
+10. Test payments with sandbox/test credentials before going live.
 
 The legacy Membexa > Settings > Payments and Membexa > Payment Add-ons screens redirect to the Payments hub.
 
@@ -159,7 +179,7 @@ Installing a compatible gateway from Payments > Discover or installing/activatin
 5. For free memberships, no payment add-on is required.
 6. For standalone paid plans, install the desired Membexa payment gateway add-on.
 7. For WooCommerce-based memberships, connect products/categories under the Membexa entitlement controls and use WooCommerce checkout gateways.
-8. Open Membexa > Payments to manage add-ons and WooCommerce gateways from one place.
+8. Open Membexa > Payments to install, activate, inspect, and configure payment gateways.
 9. Open Membexa > Help & Setup for setup and testing guidance.
 
 == Shortcodes ==
@@ -173,23 +193,31 @@ Installing a compatible gateway from Payments > Discover or installing/activatin
 
 = Does Membexa Core include Stripe, PayPal, or bKash settings? =
 
-No. Version 1.5.0 and newer use separate gateway add-on plugins. Core provides the membership and gateway registry framework, while each provider add-on owns its own setup UI.
+No. Version 1.5.0 and newer use separate Membexa gateway add-on plugins. Core provides the membership and gateway registry framework, while each provider add-on owns its own setup UI.
 
 = Can I install WooCommerce payment gateway plugins from inside Membexa? =
 
-Yes. Open Membexa > Payments > Discover. Membexa searches the official WordPress.org plugin API, and administrators with the required WordPress capabilities can install and activate compatible WooCommerce payment gateway plugins directly from that screen.
+Yes. Open Membexa > Payments > Discover. Search results come from the official WordPress.org Plugins API. Administrators with the required WordPress capabilities can install and activate a compatible gateway plugin directly from that screen.
+
+= Are the Discover results real plugins? =
+
+Yes. Membexa uses WordPress core's plugin installer API and displays metadata returned by WordPress.org. It does not maintain a fake local list of gateway names.
+
+= Why is a WordPress payment plugin Active but its gateway says Disabled? =
+
+Plugin activation and gateway enablement are different states. Activating a plugin loads its code and lets it register payment methods. The individual WooCommerce gateway normally remains disabled until its merchant credentials/settings are configured and the site owner enables it.
 
 = What if I install a gateway plugin manually? =
 
-That also works. Payment add-ons whose metadata clearly identifies them as WooCommerce payment extensions appear under Add-ons. After activation, successfully registered payment methods appear under WooCommerce Gateways.
+That also works. Clearly identified WooCommerce gateway plugins are shown under Add-ons. After activation, any payment method the plugin successfully registers with WooCommerce appears under WooCommerce Gateways.
 
 = What if a third-party WooCommerce gateway is broken? =
 
-Membexa 1.6.1 isolates the Add-ons screen from WooCommerce gateway initialization and catches unexpected gateway-loading errors on the live WooCommerce Gateways screen. A broken third-party gateway should no longer cause an uncaught Membexa Payments page fatal error.
+Membexa isolates the Add-ons screen from WooCommerce gateway initialization and catches unexpected gateway-loading errors on the live WooCommerce Gateways screen. A broken third-party gateway should not produce an uncaught Membexa Payments page fatal error.
 
 = What happens to payment settings from Membexa 1.4.x? =
 
-Stored credentials are preserved. Previously enabled providers are marked for migration during the 1.5.0 upgrade. When the matching gateway add-on is installed, its prior enabled state is restored automatically.
+Stored credentials are preserved. Previously enabled providers are marked for migration during the 1.5.0 upgrade. When the matching Membexa gateway add-on is installed, its prior enabled state is restored automatically.
 
 = Can I use a different payment gateway plugin with WooCommerce? =
 
@@ -217,9 +245,21 @@ Membexa stores WordPress user IDs, plan IDs, subscription status, gateway refere
 
 When a separate payment add-on is installed and selected, data required for that provider is sent to the corresponding third-party service as described above. Site owners are responsible for disclosing their selected payment providers and retention practices in their own privacy policy.
 
-The Payments > Discover screen contacts the official WordPress.org plugin API only when an administrator opens that discovery interface or starts an installation. WordPress.org returns plugin metadata and official package download information. Membexa does not send member or payment transaction data during gateway discovery.
+The Payments > Discover screen contacts the official WordPress.org plugin API when an administrator opens that discovery interface, searches, paginates, or starts an installation. WordPress.org returns plugin metadata and official package download information. Membexa does not send member or payment transaction data during gateway discovery.
 
 == Changelog ==
+
+= 1.7.0 =
+* Rebuilt Membexa > Payments as a live WooCommerce payment workspace.
+* Added a real WooCommerce connected/disconnected indicator and WooCommerce version display.
+* Added live Registered, Enabled, and Disabled gateway counters.
+* Added sequential live WooCommerce gateway rows with description, source plugin, state, and Configure action.
+* Rebuilt Discover as a real WordPress.org marketplace view with plugin icons, descriptions, active installs, ratings, compatibility metadata, last update dates, and WordPress.org detail links.
+* Added robust support for both object-shaped and array-shaped WordPress.org plugin API results to prevent blank plugin rows.
+* Added real search pagination and provider-name search.
+* Install & activate now returns directly to the live WooCommerce gateway list after WordPress activates the plugin.
+* Tightened payment-plugin detection so Membexa Core and unrelated WooCommerce checkout utilities are not misidentified as gateways.
+* Expanded regression tests for API normalization, false-positive filtering, WordPress.org candidate validation, and live WooCommerce gateway rows.
 
 = 1.6.1 =
 * Fixed a critical error that could occur while opening Membexa > Payments on sites with third-party WooCommerce payment extensions.

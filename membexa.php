@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Membexa – Membership & Subscriptions
  * Description:       Create membership plans, subscriptions, gated content, member accounts, WooCommerce entitlements, and modular payment gateway integrations in WordPress.
- * Version:           1.6.1
+ * Version:           1.7.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            wpzenora
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MEMBEXA_VERSION', '1.6.1' );
+define( 'MEMBEXA_VERSION', '1.7.0' );
 define( 'MEMBEXA_FILE', __FILE__ );
 define( 'MEMBEXA_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MEMBEXA_URL', plugin_dir_url( __FILE__ ) );
