@@ -23,6 +23,7 @@ final class Setup {
 		add_action( 'admin_menu', array( $this, 'menu' ), 22 );
 		add_action( 'admin_post_membexa_setup_pages', array( $this, 'handle_setup_pages' ) );
 		add_action( 'admin_footer', array( $this, 'payment_screen_extras' ) );
+		add_action( 'admin_notices', array( $this, 'help_version_notice' ) );
 	}
 
 	/** Register setup screens. */
@@ -66,9 +67,9 @@ final class Setup {
 		$result = $this->create_or_repair_pages();
 		$url    = add_query_arg(
 			array(
-				'page'           => 'membexa-setup',
-				'membexa_setup'  => empty( $result['errors'] ) ? 'success' : 'partial',
-				'membexa_created'=> count( $result['created'] ),
+				'page'            => 'membexa-setup',
+				'membexa_setup'   => empty( $result['errors'] ) ? 'success' : 'partial',
+				'membexa_created' => count( $result['created'] ),
 			),
 			admin_url( 'admin.php' )
 		);
@@ -209,7 +210,7 @@ final class Setup {
 
 	/** Append a missing shortcode only to pages explicitly created by Membexa. */
 	private function repair_owned_page_shortcode( $page_id, $key, $shortcode ) {
-		if ( $key !== get_post_meta( $page_id, self::PAGE_META, true ) ) {
+		if ( get_post_meta( $page_id, self::PAGE_META, true ) !== $key ) {
 			return;
 		}
 		$page = get_post( $page_id );
@@ -284,8 +285,12 @@ final class Setup {
 			<td>
 				<?php if ( $page ) : ?>
 					<a href="<?php echo esc_url( get_edit_post_link( $page->ID ) ); ?>"><?php esc_html_e( 'Edit', 'membexa' ); ?></a>
-					<?php if ( 'publish' === $page->post_status ) : ?> · <a href="<?php echo esc_url( get_permalink( $page->ID ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View', 'membexa' ); ?></a><?php endif; ?>
-				<?php else : ?>—<?php endif; ?>
+					<?php if ( 'publish' === $page->post_status ) : ?>
+						· <a href="<?php echo esc_url( get_permalink( $page->ID ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View', 'membexa' ); ?></a>
+					<?php endif; ?>
+				<?php else : ?>
+					—
+				<?php endif; ?>
 			</td>
 		</tr>
 		<?php
@@ -300,6 +305,19 @@ final class Setup {
 		} elseif ( 'partial' === $status ) {
 			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Some pages could not be created. Check your WordPress permissions and try again.', 'membexa' ) . '</p></div>';
 		}
+	}
+
+	/** Show an upgrade note on the older visual Help Center page. */
+	public function help_version_notice() {
+		$screen = get_current_screen();
+		if ( ! $screen || false === strpos( (string) $screen->id, 'membexa-help' ) ) {
+			return;
+		}
+		?>
+		<div class="notice notice-info">
+			<p><strong><?php esc_html_e( 'Membexa 1.4 setup update:', 'membexa' ); ?></strong> <?php esc_html_e( 'Required member pages are now created and assigned automatically. Use Membexa → Setup to create or repair them in one click; manual shortcode page creation is now optional for custom layouts.', 'membexa' ); ?> <a href="<?php echo esc_url( admin_url( 'admin.php?page=membexa-setup' ) ); ?>"><?php esc_html_e( 'Open Setup', 'membexa' ); ?></a></p>
+		</div>
+		<?php
 	}
 
 	/** Render the PayPal setup assistant. */
@@ -361,7 +379,7 @@ final class Setup {
 		/**
 		 * Filter the approved PayPal partner onboarding URL.
 		 *
-		 * @param string $url Current onboarding URL.
+		 * @param string $url        Current onboarding URL.
 		 * @param string $return_url Membexa payment settings return URL.
 		 */
 		$url = apply_filters( 'membexa_paypal_partner_connect_url', $url, admin_url( 'admin.php?page=membexa-settings&tab=payments' ) );
@@ -386,10 +404,10 @@ final class Setup {
 				'label' => __( 'Official Stripe API keys', 'membexa' ),
 			),
 			array(
-				'url'       => 'https://developer.paypal.com/dashboard/',
-				'label'     => __( 'Official PayPal Developer Dashboard', 'membexa' ),
-				'setupUrl'  => admin_url( 'admin.php?page=membexa-paypal-setup' ),
-				'setupLabel'=> __( 'Setup PayPal', 'membexa' ),
+				'url'        => 'https://developer.paypal.com/dashboard/',
+				'label'      => __( 'Official PayPal Developer Dashboard', 'membexa' ),
+				'setupUrl'   => admin_url( 'admin.php?page=membexa-paypal-setup' ),
+				'setupLabel' => __( 'Setup PayPal', 'membexa' ),
 			),
 			array(
 				'url'   => 'https://www.bkash.com/en/business',
@@ -401,7 +419,7 @@ final class Setup {
 		(function () {
 			'use strict';
 			var sections = document.querySelectorAll('.membexa-admin form[action="options.php"] h2');
-			var providers = <?php echo wp_json_encode( $data ); ?>;
+			var providers = <?php echo wp_json_encode( $data ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON is generated from fixed, escaped admin data. ?>;
 			providers.forEach(function (provider, index) {
 				if (!sections[index] || sections[index].nextElementSibling && sections[index].nextElementSibling.classList.contains('membexa-provider-links')) {
 					return;
