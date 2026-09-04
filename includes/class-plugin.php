@@ -62,6 +62,7 @@ final class Plugin {
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
 			( new Integrations_Admin() )->hooks();
+			( new Setup() )->hooks();
 			( new Help() )->hooks();
 		}
 
@@ -73,6 +74,9 @@ final class Plugin {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
+			if ( ! $installed || version_compare( $installed, '1.4.0', '<' ) ) {
+				update_option( 'membexa_setup_pages_pending', 1, false );
+			}
 			update_option( 'membexa_flush_rewrite_rules', 1, false );
 			update_option( 'membexa_version', MEMBEXA_VERSION );
 		}
