@@ -58,6 +58,7 @@ final class Plugin {
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
+			( new Help() )->hooks();
 		}
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'public_assets' ) );

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Membexa membership plan settings</title>
+  <desc id="desc">Annotated visual showing Membexa plan fields and when Stripe, PayPal, and bKash plan settings are needed.</desc>
+  <rect width="1200" height="720" fill="#f6f7f7"/>
+  <text x="55" y="68" font-family="Arial, sans-serif" font-size="31" font-weight="700" fill="#1d2327">Create a plan / প্ল্যান তৈরি</text>
+  <rect x="55" y="105" width="1090" height="560" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+  <text x="85" y="150" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#1d2327">Plan Details</text>
+
+  <g font-family="Arial, sans-serif">
+    <text x="90" y="205" font-size="18" font-weight="700" fill="#1d2327">Price</text>
+    <rect x="270" y="178" width="270" height="42" rx="5" fill="#f6f7f7" stroke="#8c8f94"/>
+    <text x="290" y="205" font-size="17" fill="#50575e">19.00</text>
+    <circle cx="585" cy="199" r="22" fill="#2271b1"/><text x="579" y="206" font-size="18" font-weight="700" fill="#fff">1</text>
+    <text x="625" y="205" font-size="17" fill="#50575e">Enter the amount / মূল্য দিন</text>
+
+    <text x="90" y="270" font-size="18" font-weight="700" fill="#1d2327">Currency</text>
+    <rect x="270" y="243" width="130" height="42" rx="5" fill="#f6f7f7" stroke="#8c8f94"/>
+    <text x="290" y="270" font-size="17" fill="#50575e">USD</text>
+    <circle cx="585" cy="264" r="22" fill="#2271b1"/><text x="579" y="271" font-size="18" font-weight="700" fill="#fff">2</text>
+    <text x="625" y="270" font-size="17" fill="#50575e">Use ISO code: USD, EUR, BDT, SAR...</text>
+
+    <text x="90" y="335" font-size="18" font-weight="700" fill="#1d2327">Billing</text>
+    <rect x="270" y="308" width="270" height="42" rx="5" fill="#f6f7f7" stroke="#8c8f94"/>
+    <text x="290" y="335" font-size="17" fill="#50575e">Monthly recurring ▾</text>
+    <circle cx="585" cy="329" r="22" fill="#2271b1"/><text x="579" y="336" font-size="18" font-weight="700" fill="#fff">3</text>
+    <text x="625" y="335" font-size="17" fill="#50575e">Free, One-time, Monthly, Yearly, Lifetime</text>
+
+    <text x="90" y="400" font-size="18" font-weight="700" fill="#1d2327">Stripe Price ID</text>
+    <rect x="270" y="373" width="350" height="42" rx="5" fill="#f6f7f7" stroke="#8c8f94"/>
+    <text x="290" y="400" font-family="monospace" font-size="16" fill="#50575e">price_...</text>
+    <circle cx="665" cy="394" r="22" fill="#2271b1"/><text x="659" y="401" font-size="18" font-weight="700" fill="#fff">4</text>
+    <text x="705" y="400" font-size="17" fill="#50575e">Needed only when selling with Stripe</text>
+
+    <text x="90" y="465" font-size="18" font-weight="700" fill="#1d2327">PayPal Plan ID</text>
+    <rect x="270" y="438" width="350" height="42" rx="5" fill="#f6f7f7" stroke="#8c8f94"/>
+    <text x="290" y="465" font-family="monospace" font-size="16" fill="#50575e">P-...</text>
+    <circle cx="665" cy="459" r="22" fill="#2271b1"/><text x="659" y="466" font-size="18" font-weight="700" fill="#fff">5</text>
+    <text x="705" y="455" font-size="17" fill="#50575e">Only Monthly/Yearly PayPal</text>
+    <text x="705" y="478" font-size="15" fill="#646970">Not needed for one-time/lifetime PayPal</text>
+
+    <text x="90" y="530" font-size="18" font-weight="700" fill="#1d2327">bKash</text>
+    <rect x="270" y="503" width="540" height="48" rx="7" fill="#fff8e5" stroke="#dba617"/>
+    <text x="290" y="533" font-size="16" fill="#664d03">BDT + One-time/Lifetime = bKash compatible</text>
+    <circle cx="850" cy="527" r="22" fill="#2271b1"/><text x="844" y="534" font-size="18" font-weight="700" fill="#fff">6</text>
+
+    <text x="90" y="605" font-size="18" font-weight="700" fill="#1d2327">Features</text>
+    <rect x="270" y="573" width="540" height="62" rx="5" fill="#f6f7f7" stroke="#8c8f94"/>
+    <text x="290" y="598" font-size="15" fill="#50575e">Premium articles</text>
+    <text x="290" y="621" font-size="15" fill="#50575e">Member downloads</text>
+    <circle cx="850" cy="604" r="22" fill="#2271b1"/><text x="844" y="611" font-size="18" font-weight="700" fill="#fff">7</text>
+    <text x="890" y="610" font-size="16" fill="#50575e">One feature per line</text>
+  </g>
+</svg>

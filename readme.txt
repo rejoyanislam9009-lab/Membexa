@@ -4,7 +4,7 @@ Tags: membership, subscriptions, stripe, paypal, bkash
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,7 @@ Membexa is a WordPress-native membership and subscription solution. It uses Word
 * Member self-service cancellation with gateway-aware cancellation handling.
 * Per-plan currency, Stripe Price ID, and PayPal Plan ID configuration.
 * WordPress-native administration screens for subscriptions, members, and settings.
+* Built-in Help & Setup Center with English and Bangla guides, annotated visual diagrams, payment setup, testing, troubleshooting, and go-live checklists.
 * Membership activation and cancellation emails.
 * WordPress personal-data export and erasure integration.
 * Optional full data cleanup on uninstall.
@@ -79,12 +80,29 @@ bKash is a third-party service and is not operated by the Membexa author. Availa
 
 1. Upload the `membexa` folder to `/wp-content/plugins/` or install the ZIP from Plugins > Add New > Upload Plugin.
 2. Activate Membexa.
-3. Go to Membexa > Plans and publish one or more membership plans.
-4. Create a pricing page with `[membexa_pricing register_url="/join/"]`.
-5. Create a registration page with `[membexa_register]` and an account page with `[membexa_account]`.
-6. Select the pricing and account pages under Membexa > Settings > General.
-7. Configure one or more payment methods under Membexa > Settings > Payments.
-8. Restrict posts or pages from the Membexa Access panel in the editor.
+3. Open Membexa > Help & Setup for the English or Bangla visual setup guide.
+4. Go to Membexa > Plans and publish one or more membership plans.
+5. Create a pricing page with `[membexa_pricing register_url="/join/"]`.
+6. Create a registration page with `[membexa_register]` and an account page with `[membexa_account]`.
+7. Select the pricing and account pages under Membexa > Settings > General.
+8. Configure one or more payment methods under Membexa > Settings > Payments.
+9. Restrict posts or pages from the Membexa Access panel in the editor.
+
+= Built-in Help & Setup Center =
+
+Membexa 1.2.0 includes a WordPress-native Help & Setup page under Membexa > Help & Setup. Site administrators can switch between English and Bangla without changing the WordPress locale. The guide includes annotated visual diagrams and step-by-step instructions for:
+
+* Required pages and shortcodes.
+* General settings and page assignment.
+* Membership plan fields and gateway compatibility.
+* Stripe, PayPal, and bKash setup.
+* Content restriction with the Membexa Access panel.
+* Sandbox/test checkout verification.
+* Member and subscription management.
+* Common troubleshooting cases.
+* Production go-live checks.
+
+The visual guide images are bundled locally with the plugin and do not load documentation images from a third-party server.
 
 = Stripe setup =
 
@@ -126,6 +144,10 @@ Production bKash credentials can be stored in `wp-config.php` as `MEMBEXA_BKASH_
 
 == Frequently Asked Questions ==
 
+= Does Membexa include setup documentation inside WordPress? =
+
+Yes. Version 1.2.0 includes Membexa > Help & Setup with English and Bangla guides plus locally bundled annotated visual diagrams.
+
 = Does Membexa store card numbers or bKash PINs? =
 
 No. Membexa uses hosted payment-provider checkout pages and server-to-server APIs. It does not collect card numbers, PayPal passwords, bKash PINs, or bKash OTPs.
@@ -136,7 +158,7 @@ Yes. A free plan activates immediately after registration or selection and requi
 
 = Which payment methods are included? =
 
-Version 1.1.0 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
+Version 1.2.0 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
 
 = Does PayPal support recurring memberships? =
 
@@ -144,7 +166,7 @@ Yes. Monthly and yearly Membexa plans can use PayPal Subscriptions when the plan
 
 = Does bKash support recurring memberships in Membexa? =
 
-Not in version 1.1.0. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
+Not in version 1.2.0. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
 
 = Does Membexa support multiple currencies? =
 
@@ -161,6 +183,14 @@ Membexa stores WordPress user IDs, membership plan IDs, subscription status, pay
 When a payment gateway is configured and selected by a member, payment-related data described in the relevant External service section above is sent to that third-party provider. Site owners are responsible for disclosing their selected payment providers, legal basis, and retention practices in their own privacy policy.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added a WordPress-native Help & Setup page under the Membexa admin menu.
+* Added complete English and Bangla setup guides without requiring a WordPress locale change.
+* Added five locally bundled annotated visual diagrams for setup order, pages/shortcodes, plans, payments, and content restriction.
+* Added payment compatibility guidance for Stripe, PayPal, and bKash.
+* Added sandbox/testing workflow, member-management guidance, troubleshooting table, and production go-live checklist.
+* Added direct Help Center links to relevant Membexa admin screens.
 
 = 1.1.0 =
 * Added PayPal one-time/lifetime checkout using PayPal Orders.

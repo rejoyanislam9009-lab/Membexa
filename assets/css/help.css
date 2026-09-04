@@ -1,0 +1,205 @@
+.membexa-help {
+	max-width: 1180px;
+}
+
+.membexa-help-hero {
+	padding: 28px;
+	margin: 20px 0;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 10px;
+}
+
+.membexa-help-hero h1 {
+	margin-top: 0;
+	font-size: 30px;
+}
+
+.membexa-help-hero p {
+	max-width: 850px;
+	font-size: 15px;
+	line-height: 1.7;
+}
+
+.membexa-help .nav-tab-wrapper {
+	margin: 0 0 22px;
+}
+
+.membexa-help-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 260px;
+	gap: 24px;
+	align-items: start;
+}
+
+.membexa-help-main {
+	min-width: 0;
+}
+
+.membexa-help-nav {
+	position: sticky;
+	top: 48px;
+	padding: 18px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+}
+
+.membexa-help-nav strong {
+	display: block;
+	margin-bottom: 10px;
+}
+
+.membexa-help-nav a {
+	display: block;
+	padding: 7px 0;
+	text-decoration: none;
+}
+
+.membexa-help-section {
+	padding: 26px;
+	margin-bottom: 22px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+}
+
+.membexa-help-section h2 {
+	margin-top: 0;
+	font-size: 23px;
+}
+
+.membexa-help-section h3 {
+	margin-top: 24px;
+}
+
+.membexa-help-section p,
+.membexa-help-section li,
+.membexa-help-section td,
+.membexa-help-section th {
+	font-size: 14px;
+	line-height: 1.65;
+}
+
+.membexa-help-figure {
+	padding: 12px;
+	margin: 18px 0 6px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+}
+
+.membexa-help-figure img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.membexa-help-caption {
+	margin: 9px 4px 0;
+	color: #646970;
+	font-size: 13px;
+}
+
+.membexa-help-callout {
+	padding: 14px 16px;
+	margin: 16px 0;
+	background: #f0f6fc;
+	border-inline-start: 4px solid #2271b1;
+}
+
+.membexa-help-warning {
+	padding: 14px 16px;
+	margin: 16px 0;
+	background: #fff8e5;
+	border-inline-start: 4px solid #dba617;
+}
+
+.membexa-help-danger {
+	padding: 14px 16px;
+	margin: 16px 0;
+	background: #fcf0f1;
+	border-inline-start: 4px solid #d63638;
+}
+
+.membexa-help-steps {
+	padding-inline-start: 22px;
+}
+
+.membexa-help-steps > li {
+	margin-bottom: 13px;
+}
+
+.membexa-help-code {
+	display: inline-block;
+	padding: 3px 7px;
+	font-family: Consolas, Monaco, monospace;
+	background: #f0f0f1;
+	border-radius: 4px;
+}
+
+.membexa-help-table {
+	width: 100%;
+	margin: 14px 0;
+	border-collapse: collapse;
+}
+
+.membexa-help-table th,
+.membexa-help-table td {
+	padding: 10px 12px;
+	text-align: start;
+	vertical-align: top;
+	border: 1px solid #dcdcde;
+}
+
+.membexa-help-table th {
+	background: #f6f7f7;
+}
+
+.membexa-help-checklist {
+	columns: 2;
+	column-gap: 28px;
+}
+
+.membexa-help-checklist li {
+	break-inside: avoid;
+	margin-bottom: 9px;
+}
+
+.membexa-help-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.membexa-help-badge {
+	display: inline-block;
+	padding: 3px 8px;
+	font-size: 12px;
+	font-weight: 600;
+	background: #f0f6fc;
+	border-radius: 999px;
+}
+
+@media (max-width: 960px) {
+	.membexa-help-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.membexa-help-nav {
+		position: static;
+		order: -1;
+	}
+}
+
+@media (max-width: 600px) {
+	.membexa-help-hero,
+	.membexa-help-section {
+		padding: 18px;
+	}
+
+	.membexa-help-checklist {
+		columns: 1;
+	}
+}
