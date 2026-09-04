@@ -13,14 +13,18 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /** Delegates paid membership checkout to WooCommerce and its installed gateways. */
 final class Gateways {
-	/** Return enabled WooCommerce gateway labels for administrator status only. */
+	/** Return the neutral bridge used by Membexa forms. */
 	public static function enabled() {
+		return self::woocommerce_ready() ? array( 'woocommerce' => __( 'Secure checkout', 'membexa' ) ) : array();
+	}
+
+	/** Return actually enabled WooCommerce gateway labels for administrator status. */
+	public static function installed_enabled() {
 		if ( ! self::woocommerce_ready() || ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) { return array(); }
 		$enabled = array();
 		foreach ( WC()->payment_gateways()->payment_gateways() as $id => $gateway ) {
-			if ( isset( $gateway->enabled ) && 'yes' === $gateway->enabled ) {
-				$enabled[ sanitize_key( $id ) ] = wp_strip_all_tags( $gateway->get_title() );
-			}
+			if ( isset( $gateway->enabled ) && 'yes' === $gateway->enabled ) { $enabled[ sanitize_key( $id ) ] = wp_strip_all_tags( $gateway->get_title() ); }
+		}
 		return $enabled;
 	}
 
@@ -29,7 +33,7 @@ final class Gateways {
 		if ( ! is_array( $plan ) || 'free' === $plan['billing'] || 0.0 === (float) $plan['price'] ) { return array(); }
 		$product_id = self::product_id_for_plan( $plan['id'] );
 		if ( ! self::woocommerce_ready() || ! $product_id || ! wc_get_product( $product_id ) ) { return array(); }
-		return array( 'woocommerce' => __( 'Secure checkout', 'membexa' ) );
+		return self::enabled();
 	}
 
 	/** Start checkout through the linked WooCommerce product. */
