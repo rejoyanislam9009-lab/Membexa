@@ -15,13 +15,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Stripe-hosted Checkout and webhook integration.
+ */
 final class Stripe {
 	const API_BASE = 'https://api.stripe.com/v1/';
 
+	/**
+	 * Register Stripe hooks.
+	 *
+	 * @return void
+	 */
 	public function hooks() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
+	/**
+	 * Register the signed Stripe webhook endpoint.
+	 *
+	 * @return void
+	 */
 	public function register_routes() {
 		register_rest_route(
 			'membexa/v1',
@@ -34,11 +47,23 @@ final class Stripe {
 		);
 	}
 
+	/**
+	 * Determine whether Stripe Checkout is configured.
+	 *
+	 * @return bool
+	 */
 	public static function enabled() {
 		$settings = Settings::payments();
-		return ! empty( $settings['stripe_enabled'] ) && Settings::stripe_secret_key();
+		return ! empty( $settings['stripe_enabled'] ) && (bool) Settings::stripe_secret_key();
 	}
 
+	/**
+	 * Create a Stripe Checkout Session for a membership plan.
+	 *
+	 * @param int $user_id WordPress user ID.
+	 * @param int $plan_id Membership plan ID.
+	 * @return string|WP_Error Checkout URL or error.
+	 */
 	public static function start_checkout( $user_id, $plan_id ) {
 		$plan = Plan::get( $plan_id );
 		$user = get_userdata( $user_id );
@@ -72,6 +97,7 @@ final class Stripe {
 			'success_url'                     => add_query_arg( 'membexa_notice', 'payment_success', $account_url ),
 			'cancel_url'                      => add_query_arg( 'membexa_notice', 'payment_cancelled', $account_url ),
 		);
+
 		if ( 'subscription' === $mode && $plan['trial_days'] > 0 ) {
 			$body['subscription_data[trial_period_days]'] = (string) $plan['trial_days'];
 		}
@@ -85,6 +111,7 @@ final class Stripe {
 			Subscriptions::cancel_local( $subscription_id );
 			return new WP_Error( 'membexa_stripe_response', __( 'Stripe returned an incomplete Checkout response.', 'membexa' ) );
 		}
+
 		$host = wp_parse_url( $response['url'], PHP_URL_HOST );
 		if ( 'checkout.stripe.com' !== $host ) {
 			Subscriptions::cancel_local( $subscription_id );
@@ -95,34 +122,58 @@ final class Stripe {
 		return esc_url_raw( $response['url'] );
 	}
 
+	/**
+	 * Schedule a recurring Stripe subscription for cancellation.
+	 *
+	 * @param object $subscription Local subscription record.
+	 * @return true|WP_Error
+	 */
 	public static function cancel_at_period_end( $subscription ) {
 		if ( ! $subscription || 'stripe' !== $subscription->gateway || 0 !== strpos( $subscription->gateway_external_id, 'sub_' ) ) {
 			return new WP_Error( 'membexa_not_recurring', __( 'This subscription cannot be scheduled for Stripe cancellation.', 'membexa' ) );
 		}
-		$response = self::api_request( 'subscriptions/' . rawurlencode( $subscription->gateway_external_id ), array( 'cancel_at_period_end' => 'true' ) );
+
+		$response = self::api_request(
+			'subscriptions/' . rawurlencode( $subscription->gateway_external_id ),
+			array(
+				'cancel_at_period_end' => 'true',
+			)
+		);
 		if ( is_wp_error( $response ) ) {
 			return $response;
 		}
+
 		Subscriptions::set_cancel_at_period_end( $subscription->id, true );
 		return true;
 	}
 
+	/**
+	 * Send an authenticated form-encoded POST request to Stripe.
+	 *
+	 * @param string $endpoint Stripe API endpoint relative to API_BASE.
+	 * @param array  $body     Request body.
+	 * @return array|WP_Error
+	 */
 	private static function api_request( $endpoint, $body ) {
 		$secret = Settings::stripe_secret_key();
 		if ( ! $secret ) {
 			return new WP_Error( 'membexa_stripe_key', __( 'Stripe secret key is missing.', 'membexa' ) );
 		}
+
 		$response = wp_remote_post(
 			self::API_BASE . ltrim( $endpoint, '/' ),
 			array(
 				'timeout' => 30,
-				'headers' => array( 'Authorization' => 'Bearer ' . $secret ),
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $secret,
+				),
 				'body'    => $body,
 			)
 		);
 		if ( is_wp_error( $response ) ) {
 			return $response;
 		}
+
 		$code = wp_remote_retrieve_response_code( $response );
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( $code < 200 || $code >= 300 ) {
@@ -132,20 +183,44 @@ final class Stripe {
 		return is_array( $data ) ? $data : array();
 	}
 
+	/**
+	 * Process a signed Stripe webhook request.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response
+	 */
 	public function webhook( WP_REST_Request $request ) {
 		$payload   = $request->get_body();
 		$signature = $request->get_header( 'stripe-signature' );
 		$secret    = Settings::stripe_webhook_secret();
 		if ( ! $secret || ! $this->verify_signature( $payload, $signature, $secret ) ) {
-			return new WP_REST_Response( array( 'error' => 'invalid_signature' ), 400 );
+			return new WP_REST_Response(
+				array(
+					'error' => 'invalid_signature',
+				),
+				400
+			);
 		}
+
 		$event = json_decode( $payload, true );
 		if ( ! is_array( $event ) || empty( $event['id'] ) || empty( $event['type'] ) ) {
-			return new WP_REST_Response( array( 'error' => 'invalid_event' ), 400 );
+			return new WP_REST_Response(
+				array(
+					'error' => 'invalid_event',
+				),
+				400
+			);
 		}
+
 		$event_key = 'membexa_stripe_evt_' . md5( $event['id'] );
 		if ( get_transient( $event_key ) ) {
-			return new WP_REST_Response( array( 'received' => true, 'duplicate' => true ), 200 );
+			return new WP_REST_Response(
+				array(
+					'received'  => true,
+					'duplicate' => true,
+				),
+				200
+			);
 		}
 
 		$object = isset( $event['data']['object'] ) && is_array( $event['data']['object'] ) ? $event['data']['object'] : array();
@@ -174,10 +249,22 @@ final class Stripe {
 				$this->handle_invoice( $object, false );
 				break;
 		}
+
 		set_transient( $event_key, 1, DAY_IN_SECONDS );
-		return new WP_REST_Response( array( 'received' => true ), 200 );
+		return new WP_REST_Response(
+			array(
+				'received' => true,
+			),
+			200
+		);
 	}
 
+	/**
+	 * Handle a completed Checkout Session.
+	 *
+	 * @param array $session Stripe Checkout Session payload.
+	 * @return void
+	 */
 	private function handle_checkout_completed( $session ) {
 		$local_subscription_id = $this->local_subscription_id( $session );
 		if ( ! $local_subscription_id ) {
@@ -212,11 +299,19 @@ final class Stripe {
 		);
 	}
 
+	/**
+	 * Handle asynchronous Checkout payment completion/failure.
+	 *
+	 * @param array $session   Stripe Checkout Session payload.
+	 * @param bool  $succeeded Whether the delayed payment succeeded.
+	 * @return void
+	 */
 	private function handle_async_checkout( $session, $succeeded ) {
 		$local_subscription_id = $this->local_subscription_id( $session );
 		if ( ! $local_subscription_id ) {
 			return;
 		}
+
 		$external_id = ! empty( $session['payment_intent'] ) ? $session['payment_intent'] : ( ! empty( $session['id'] ) ? $session['id'] : '' );
 		$subscription = Subscriptions::get( $local_subscription_id );
 		if ( $succeeded ) {
@@ -224,6 +319,7 @@ final class Stripe {
 		} else {
 			Subscriptions::cancel_local( $local_subscription_id );
 		}
+
 		$currency = isset( $session['currency'] ) ? $session['currency'] : '';
 		Subscriptions::log_transaction(
 			array(
@@ -239,10 +335,17 @@ final class Stripe {
 		);
 	}
 
+	/**
+	 * Map Stripe subscription lifecycle state to local membership state.
+	 *
+	 * @param array $subscription Stripe subscription payload.
+	 * @return void
+	 */
 	private function handle_subscription_updated( $subscription ) {
 		if ( empty( $subscription['id'] ) ) {
 			return;
 		}
+
 		$map = array(
 			'active'     => 'active',
 			'trialing'   => 'trialing',
@@ -260,15 +363,24 @@ final class Stripe {
 		);
 	}
 
+	/**
+	 * Handle successful or failed subscription invoices.
+	 *
+	 * @param array $invoice Stripe invoice payload.
+	 * @param bool  $paid    Whether the invoice was paid.
+	 * @return void
+	 */
 	private function handle_invoice( $invoice, $paid ) {
 		$external_subscription_id = $this->invoice_subscription_id( $invoice );
 		if ( ! $external_subscription_id ) {
 			return;
 		}
+
 		$subscription = Subscriptions::get_by_external_id( $external_subscription_id );
 		if ( ! $subscription ) {
 			return;
 		}
+
 		Subscriptions::update_status_by_external_id( $external_subscription_id, $paid ? 'active' : 'past_due' );
 		$amount_key = $paid ? 'amount_paid' : 'amount_due';
 		$currency   = isset( $invoice['currency'] ) ? $invoice['currency'] : '';
@@ -286,11 +398,23 @@ final class Stripe {
 		);
 	}
 
+	/**
+	 * Get local subscription metadata from Checkout.
+	 *
+	 * @param array $session Checkout Session payload.
+	 * @return int
+	 */
 	private function local_subscription_id( $session ) {
 		$metadata = isset( $session['metadata'] ) && is_array( $session['metadata'] ) ? $session['metadata'] : array();
 		return isset( $metadata['local_subscription_id'] ) ? absint( $metadata['local_subscription_id'] ) : 0;
 	}
 
+	/**
+	 * Extract a Stripe subscription ID from current or legacy invoice shapes.
+	 *
+	 * @param array $invoice Invoice payload.
+	 * @return string
+	 */
 	private function invoice_subscription_id( $invoice ) {
 		if ( ! empty( $invoice['subscription'] ) && is_string( $invoice['subscription'] ) ) {
 			return sanitize_text_field( $invoice['subscription'] );
@@ -301,6 +425,13 @@ final class Stripe {
 		return '';
 	}
 
+	/**
+	 * Convert Stripe minor units to a major-unit amount for display/storage.
+	 *
+	 * @param int|float $amount   Stripe amount in minor units.
+	 * @param string    $currency ISO currency code.
+	 * @return float
+	 */
 	private static function minor_to_major( $amount, $currency ) {
 		$zero_decimal = array( 'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF' );
 		$currency     = strtoupper( sanitize_text_field( $currency ) );
@@ -308,22 +439,45 @@ final class Stripe {
 		return in_array( $currency, $zero_decimal, true ) ? $amount : $amount / 100;
 	}
 
+	/**
+	 * Replace a local subscription's gateway ID.
+	 *
+	 * @param int    $subscription_id Local subscription ID.
+	 * @param string $external_id     Stripe object ID.
+	 * @return bool
+	 */
 	private static function set_external_id( $subscription_id, $external_id ) {
 		global $wpdb;
-		return false !== $wpdb->update(
+
+		// Dedicated Membexa subscription table update.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$updated = $wpdb->update(
 			DB::subscriptions_table(),
 			array(
 				'gateway_external_id' => sanitize_text_field( $external_id ),
 				'updated_at'          => current_time( 'mysql', true ),
 			),
-			array( 'id' => absint( $subscription_id ) )
+			array(
+				'id' => absint( $subscription_id ),
+			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return false !== $updated;
 	}
 
+	/**
+	 * Verify the Stripe-Signature header using Stripe's v1 HMAC scheme.
+	 *
+	 * @param string $payload Raw webhook body.
+	 * @param string $header  Stripe-Signature header.
+	 * @param string $secret  Endpoint signing secret.
+	 * @return bool
+	 */
 	private function verify_signature( $payload, $header, $secret ) {
 		if ( ! $payload || ! $header ) {
 			return false;
 		}
+
 		$timestamp  = 0;
 		$signatures = array();
 		foreach ( explode( ',', $header ) as $part ) {
@@ -337,9 +491,11 @@ final class Stripe {
 				$signatures[] = $pair[1];
 			}
 		}
+
 		if ( ! $timestamp || abs( time() - $timestamp ) > 300 || empty( $signatures ) ) {
 			return false;
 		}
+
 		$expected = hash_hmac( 'sha256', $timestamp . '.' . $payload, $secret );
 		foreach ( $signatures as $signature ) {
 			if ( hash_equals( $expected, $signature ) ) {
