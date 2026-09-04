@@ -23,3 +23,21 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: composer lint
       - run: composer phpcs
+
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare WordPress.org-style plugin directory
+        run: |
+          mkdir -p build/membexa
+          rsync -a ./ build/membexa/ \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='build' \
+            --exclude='vendor'
+      - name: Run WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1.1.9
+        with:
+          build-dir: './build/membexa'
+          slug: 'membexa'
