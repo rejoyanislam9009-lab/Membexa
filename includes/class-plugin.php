@@ -13,7 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /** Coordinates Membexa services and hooks. */
 final class Plugin {
-	/** @var Plugin|null */
+	/**
+	 * Singleton instance.
+	 *
+	 * @var Plugin|null
+	 */
 	private static $instance;
 
 	/** Get the plugin singleton. */
@@ -25,7 +29,8 @@ final class Plugin {
 	}
 
 	/** Prevent direct construction. */
-	private function __construct() {}
+	private function __construct() {
+	}
 
 	/** Bootstrap plugin services. */
 	public function run() {
