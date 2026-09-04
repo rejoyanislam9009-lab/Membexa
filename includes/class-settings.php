@@ -34,6 +34,7 @@ final class Settings {
 		register_setting( 'membexa_payments_group', 'membexa_payments', array( 'sanitize_callback' => array( $this, 'sanitize_payments' ) ) );
 		register_setting( 'membexa_emails_group', 'membexa_emails', array( 'sanitize_callback' => array( $this, 'sanitize_emails' ) ) );
 		register_setting( 'membexa_data_group', 'membexa_data', array( 'sanitize_callback' => array( $this, 'sanitize_data' ) ) );
+		register_setting( 'membexa_integrations_group', 'membexa_integrations', array( 'sanitize_callback' => array( $this, 'sanitize_integrations' ) ) );
 	}
 
 	/**
@@ -80,6 +81,26 @@ final class Settings {
 			'bkash_password'        => isset( $input['bkash_password'] ) ? sanitize_text_field( wp_unslash( $input['bkash_password'] ) ) : '',
 			'bkash_app_key'         => isset( $input['bkash_app_key'] ) ? sanitize_text_field( wp_unslash( $input['bkash_app_key'] ) ) : '',
 			'bkash_app_secret'      => isset( $input['bkash_app_secret'] ) ? sanitize_text_field( wp_unslash( $input['bkash_app_secret'] ) ) : '',
+		);
+	}
+
+	/**
+	 * Sanitize account and commerce integration settings.
+	 *
+	 * @param mixed $input Submitted settings.
+	 * @return array
+	 */
+	public function sanitize_integrations( $input ) {
+		$input   = is_array( $input ) ? $input : array();
+		$allowed = array( 'auto', 'membexa', 'woocommerce', 'custom' );
+		$mode    = isset( $input['account_mode'] ) ? sanitize_key( wp_unslash( $input['account_mode'] ) ) : 'auto';
+		$mode    = in_array( $mode, $allowed, true ) ? $mode : 'auto';
+
+		return array(
+			'account_mode'     => $mode,
+			'join_page_id'     => isset( $input['join_page_id'] ) ? absint( $input['join_page_id'] ) : 0,
+			'login_page_id'    => isset( $input['login_page_id'] ) ? absint( $input['login_page_id'] ) : 0,
+			'revoke_on_refund' => empty( $input['revoke_on_refund'] ) ? 0 : 1,
 		);
 	}
 
@@ -150,6 +171,23 @@ final class Settings {
 				'bkash_password'        => '',
 				'bkash_app_key'         => '',
 				'bkash_app_secret'      => '',
+			)
+		);
+	}
+
+	/**
+	 * Get account and commerce integration settings with defaults.
+	 *
+	 * @return array
+	 */
+	public static function integrations() {
+		return wp_parse_args(
+			get_option( 'membexa_integrations', array() ),
+			array(
+				'account_mode'     => 'auto',
+				'join_page_id'     => 0,
+				'login_page_id'    => 0,
+				'revoke_on_refund' => 1,
 			)
 		);
 	}
