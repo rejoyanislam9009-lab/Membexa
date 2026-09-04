@@ -60,6 +60,7 @@ final class Plugin {
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
+			( new Integrations_Admin() )->hooks();
 			( new Help() )->hooks();
 		}
 
