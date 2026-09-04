@@ -55,6 +55,7 @@ final class Plugin {
 		( new Bkash() )->hooks();
 		( new Access() )->hooks();
 		( new Commerce() )->hooks();
+		( new Commerce_Lifecycle() )->hooks();
 		( new Shortcodes() )->hooks();
 		( new Privacy() )->hooks();
 
