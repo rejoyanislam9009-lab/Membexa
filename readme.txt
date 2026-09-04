@@ -4,7 +4,7 @@ Tags: membership, subscriptions, stripe, paypal, bkash
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,11 @@ Membexa is a WordPress-native membership and subscription solution. It uses Word
 * Member self-service cancellation with gateway-aware cancellation handling.
 * Per-plan currency, Stripe Price ID, and PayPal Plan ID configuration.
 * WordPress-native administration screens for subscriptions, members, and settings.
+* Smart Account mode: WooCommerce My Account becomes the member hub when WooCommerce is active, with a Membexa Memberships tab and automatic standalone fallback when WooCommerce is absent.
+* WooCommerce product and product-category entitlement rules: grant plans after purchase and restrict product visibility or purchase by active membership plan.
+* WooCommerce order lifecycle integration with account-required membership purchases and optional refund/cancellation revocation limited to memberships created by the original order.
+* WooCommerce Subscriptions lifecycle synchronization for subscription products when WooCommerce Subscriptions is installed.
+* Compatible with WooCommerce simple, variable, virtual, and downloadable products without duplicating WooCommerce product, cart, order, tax, inventory, or download systems.
 * Built-in Help & Setup Center with English and Bangla guides, annotated visual diagrams, payment setup, testing, troubleshooting, and go-live checklists.
 * Membership activation and cancellation emails.
 * WordPress personal-data export and erasure integration.
@@ -82,15 +87,16 @@ bKash is a third-party service and is not operated by the Membexa author. Availa
 2. Activate Membexa.
 3. Open Membexa > Help & Setup for the English or Bangla visual setup guide.
 4. Go to Membexa > Plans and publish one or more membership plans.
-5. Create a pricing page with `[membexa_pricing register_url="/join/"]`.
+5. Create a pricing page with `[membexa_pricing]`. Smart Account routing will choose the correct registration destination automatically; `register_url` remains available as an optional override.
 6. Create a registration page with `[membexa_register]` and an account page with `[membexa_account]`.
 7. Select the pricing and account pages under Membexa > Settings > General.
 8. Configure one or more payment methods under Membexa > Settings > Payments.
 9. Restrict posts or pages from the Membexa Access panel in the editor.
+10. Optional: if WooCommerce is active, open Membexa > Accounts & Commerce, keep Auto / Smart account mode, then connect products or product categories to plans from the Membexa Membership Entitlements controls.
 
 = Built-in Help & Setup Center =
 
-Membexa 1.2.0 includes a WordPress-native Help & Setup page under Membexa > Help & Setup. Site administrators can switch between English and Bangla without changing the WordPress locale. The guide includes annotated visual diagrams and step-by-step instructions for:
+Membexa includes a WordPress-native Help & Setup page under Membexa > Help & Setup. Site administrators can switch between English and Bangla without changing the WordPress locale. The guide includes annotated visual diagrams and step-by-step instructions for:
 
 * Required pages and shortcodes.
 * General settings and page assignment.
@@ -137,16 +143,16 @@ Production bKash credentials can be stored in `wp-config.php` as `MEMBEXA_BKASH_
 
 == Shortcodes ==
 
-* `[membexa_pricing]` displays published plans and compatible enabled payment methods. Optional: `register_url="/join/"`.
-* `[membexa_register]` displays registration, plan selection, and enabled payment methods.
-* `[membexa_login]` displays the standard WordPress login form.
+* `[membexa_pricing]` displays published plans and compatible enabled payment methods. Optional: `register_url="/join/"`. When omitted, Membexa uses Smart Account routing automatically.
+* `[membexa_register]` displays registration, plan selection, and enabled payment methods. In WooCommerce account mode with My Account registration enabled, it routes users to the WooCommerce account experience instead of creating a competing registration surface.
+* `[membexa_login]` displays the Membexa/WordPress login experience or routes to WooCommerce My Account when Smart Account uses WooCommerce.
 * `[membexa_account]` displays the signed-in member's subscriptions and cancellation controls.
 
 == Frequently Asked Questions ==
 
 = Does Membexa include setup documentation inside WordPress? =
 
-Yes. Version 1.2.0 includes Membexa > Help & Setup with English and Bangla guides plus locally bundled annotated visual diagrams.
+Yes. Membexa includes Membexa > Help & Setup with English and Bangla guides plus locally bundled annotated visual diagrams.
 
 = Does Membexa store card numbers or bKash PINs? =
 
@@ -158,7 +164,7 @@ Yes. A free plan activates immediately after registration or selection and requi
 
 = Which payment methods are included? =
 
-Version 1.2.0 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
+Version 1.3.0 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
 
 = Does PayPal support recurring memberships? =
 
@@ -166,11 +172,23 @@ Yes. Monthly and yearly Membexa plans can use PayPal Subscriptions when the plan
 
 = Does bKash support recurring memberships in Membexa? =
 
-Not in version 1.2.0. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
+Not in version 1.3.0. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
 
 = Does Membexa support multiple currencies? =
 
 Each plan has its own three-letter currency code. Stripe and PayPal compatibility depends on the payment provider and your merchant account. bKash plans in this release must use BDT.
+
+= Does Membexa replace WooCommerce? =
+
+No. WooCommerce remains responsible for products, cart, checkout, orders, taxes, inventory, and downloadable-product permissions. Membexa connects those commerce events to membership plans and access rules. WooCommerce product purchases use payment gateways configured for WooCommerce; Membexa’s built-in Stripe, PayPal, and bKash gateways remain available for standalone Membexa plan checkout.
+
+= Can a WooCommerce downloadable or subscription product grant membership? =
+
+Yes. Any supported WooCommerce product can be linked to Membexa plans. Downloadable file permissions continue to be managed by WooCommerce. If WooCommerce Subscriptions is installed, Membexa synchronizes subscription lifecycle states to membership access.
+
+= How are WooCommerce and Membexa login/registration pages handled? =
+
+Membexa uses one WordPress user identity. Auto / Smart account mode uses WooCommerce My Account when WooCommerce is active and adds a Memberships tab. If WooCommerce My Account registration is disabled, administrators can select a Membexa Join page as a safe registration fallback. Membexa never disables the core WordPress wp-login.php screen.
 
 = Does uninstalling Membexa delete membership data? =
 
@@ -183,6 +201,20 @@ Membexa stores WordPress user IDs, membership plan IDs, subscription status, pay
 When a payment gateway is configured and selected by a member, payment-related data described in the relevant External service section above is sent to that third-party provider. Site owners are responsible for disclosing their selected payment providers, legal basis, and retention practices in their own privacy policy.
 
 == Changelog ==
+
+= 1.3.0 =
+* Added Smart Account routing with Auto, Membexa, WooCommerce, and custom account modes.
+* Added a Membexa Memberships endpoint inside WooCommerce My Account while keeping one WordPress user identity.
+* Added safe registration fallback when WooCommerce My Account registration is disabled; core wp-login.php remains available.
+* Added Membexa > Commerce integration overview.
+* Added WooCommerce product-level membership grant, view restriction, and purchase restriction rules.
+* Added WooCommerce product-category membership grant and access-rule inheritance.
+* Added account-required checkout when a WooCommerce cart item grants membership.
+* Added idempotent membership grants on qualifying WooCommerce processing/completed orders.
+* Added optional refund/cancellation revocation scoped only to Membexa memberships created by that exact order.
+* Added WooCommerce Subscriptions lifecycle synchronization for active, on-hold, pending-cancel, cancelled, and expired subscription products.
+* Added support for simple, variable, virtual, downloadable, and subscription commerce flows without duplicating WooCommerce commerce data.
+* Added in-plugin Accounts & Commerce setup guidance and configuration warnings.
 
 = 1.2.0 =
 * Added a WordPress-native Help & Setup page under the Membexa admin menu.
