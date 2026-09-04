@@ -138,18 +138,19 @@ final class Access {
 	}
 
 	/**
-	 * Replace restricted front-end content.
+	 * Replace restricted content in standard main-loop views, including feeds
+	 * and archive pages that choose to render full post content.
 	 *
 	 * @param string $content Post content.
 	 * @return string
 	 */
 	public function filter_content( $content ) {
-		if ( ! is_singular() || ! in_the_loop() || ! is_main_query() ) {
+		if ( is_admin() || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
 		}
 
 		$post_id = get_the_ID();
-		if ( self::can_view( $post_id ) ) {
+		if ( ! $post_id || self::can_view( $post_id ) ) {
 			return $content;
 		}
 		return $this->restricted_message();
