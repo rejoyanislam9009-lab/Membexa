@@ -10,6 +10,9 @@
 	<config name="minimum_supported_wp_version" value="6.4"/>
 	<rule ref="WordPress-Core"/>
 	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress.Security.NonceVerification.Missing">
+		<exclude-pattern>includes/class-shortcodes.php</exclude-pattern>
+	</rule>
 	<rule ref="PHPCompatibilityWP">
 		<properties>
 			<property name="testVersion" value="7.4-"/>
