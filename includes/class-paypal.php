@@ -22,21 +22,13 @@ final class PayPal {
 	const SANDBOX_API = 'https://api-m.sandbox.paypal.com';
 	const LIVE_API    = 'https://api-m.paypal.com';
 
-	/**
-	 * Register PayPal hooks.
-	 *
-	 * @return void
-	 */
+	/** Register PayPal hooks. */
 	public function hooks() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_action( 'template_redirect', array( $this, 'maybe_handle_return' ) );
 	}
 
-	/**
-	 * Register webhook endpoint.
-	 *
-	 * @return void
-	 */
+	/** Register the PayPal webhook endpoint. */
 	public function register_routes() {
 		register_rest_route(
 			'membexa/v1',
@@ -49,11 +41,7 @@ final class PayPal {
 		);
 	}
 
-	/**
-	 * Determine whether PayPal is configured.
-	 *
-	 * @return bool
-	 */
+	/** Determine whether PayPal is configured. */
 	public static function enabled() {
 		$settings = Settings::payments();
 		return ! empty( $settings['paypal_enabled'] ) && Settings::paypal_client_id() && Settings::paypal_client_secret();
@@ -95,54 +83,9 @@ final class PayPal {
 		$cancel_url = add_query_arg( 'membexa_notice', 'payment_cancelled', $account_url );
 
 		if ( Gateways::is_recurring( $plan['billing'] ) ) {
-			if ( empty( $plan['paypal_plan_id'] ) ) {
-				Subscriptions::cancel_local( $subscription_id );
-				return new WP_Error( 'membexa_paypal_plan', __( 'This recurring plan does not have a PayPal Plan ID.', 'membexa' ) );
-			}
-
-			$body = array(
-				'plan_id'             => $plan['paypal_plan_id'],
-				'quantity'            => '1',
-				'custom_id'           => (string) $subscription_id,
-				'subscriber'          => array(
-					'email_address' => $user->user_email,
-				),
-				'application_context' => array(
-					'brand_name'          => wp_strip_all_tags( get_bloginfo( 'name' ) ),
-					'user_action'         => 'SUBSCRIBE_NOW',
-					'return_url'          => $return_url,
-					'cancel_url'          => $cancel_url,
-					'shipping_preference' => 'NO_SHIPPING',
-				),
-			);
-			$response = self::api_request( 'POST', '/v1/billing/subscriptions', $body, 'membexa-sub-' . $subscription_id );
+			$response = self::create_subscription( $plan, $user, $subscription_id, $return_url, $cancel_url );
 		} else {
-			$body = array(
-				'intent'         => 'CAPTURE',
-				'payment_source' => array(
-					'paypal' => array(
-						'experience_context' => array(
-							'payment_method_preference' => 'IMMEDIATE_PAYMENT_REQUIRED',
-							'user_action'               => 'PAY_NOW',
-							'shipping_preference'       => 'NO_SHIPPING',
-							'return_url'                => $return_url,
-							'cancel_url'                => $cancel_url,
-						),
-					),
-				),
-				'purchase_units' => array(
-					array(
-						'custom_id'   => (string) $subscription_id,
-						'invoice_id'  => 'MBX-' . $subscription_id . '-' . time(),
-						'description' => mb_substr( $plan['name'], 0, 120 ),
-						'amount'      => array(
-							'currency_code' => strtoupper( $plan['currency'] ),
-							'value'         => number_format( (float) $plan['price'], 2, '.', '' ),
-						),
-					),
-				),
-			);
-			$response = self::api_request( 'POST', '/v2/checkout/orders', $body, 'membexa-order-' . $subscription_id );
+			$response = self::create_order( $plan, $subscription_id, $return_url, $cancel_url );
 		}
 
 		if ( is_wp_error( $response ) ) {
@@ -160,15 +103,81 @@ final class PayPal {
 			Subscriptions::cancel_local( $subscription_id );
 			return new WP_Error( 'membexa_paypal_url', __( 'PayPal returned an unexpected checkout URL.', 'membexa' ) );
 		}
-
 		return esc_url_raw( $approval_url );
 	}
 
 	/**
-	 * Handle return from PayPal one-time checkout.
+	 * Create a PayPal recurring subscription.
 	 *
-	 * @return void
+	 * @param array    $plan            Membership plan.
+	 * @param \WP_User $user            Member.
+	 * @param int      $subscription_id Local subscription ID.
+	 * @param string   $return_url      Return URL.
+	 * @param string   $cancel_url      Cancel URL.
+	 * @return array|WP_Error
 	 */
+	private static function create_subscription( $plan, $user, $subscription_id, $return_url, $cancel_url ) {
+		if ( empty( $plan['paypal_plan_id'] ) ) {
+			return new WP_Error( 'membexa_paypal_plan', __( 'This recurring plan does not have a PayPal Plan ID.', 'membexa' ) );
+		}
+
+		$body = array(
+			'plan_id'             => $plan['paypal_plan_id'],
+			'quantity'            => '1',
+			'custom_id'           => (string) $subscription_id,
+			'subscriber'          => array(
+				'email_address' => $user->user_email,
+			),
+			'application_context' => array(
+				'brand_name'          => wp_strip_all_tags( get_bloginfo( 'name' ) ),
+				'user_action'         => 'SUBSCRIBE_NOW',
+				'return_url'          => $return_url,
+				'cancel_url'          => $cancel_url,
+				'shipping_preference' => 'NO_SHIPPING',
+			),
+		);
+		return self::api_request( 'POST', '/v1/billing/subscriptions', $body, 'membexa-sub-' . $subscription_id );
+	}
+
+	/**
+	 * Create a PayPal one-time order.
+	 *
+	 * @param array  $plan            Membership plan.
+	 * @param int    $subscription_id Local subscription ID.
+	 * @param string $return_url      Return URL.
+	 * @param string $cancel_url      Cancel URL.
+	 * @return array|WP_Error
+	 */
+	private static function create_order( $plan, $subscription_id, $return_url, $cancel_url ) {
+		$body = array(
+			'intent'         => 'CAPTURE',
+			'payment_source' => array(
+				'paypal' => array(
+					'experience_context' => array(
+						'payment_method_preference' => 'IMMEDIATE_PAYMENT_REQUIRED',
+						'user_action'               => 'PAY_NOW',
+						'shipping_preference'       => 'NO_SHIPPING',
+						'return_url'                => $return_url,
+						'cancel_url'                => $cancel_url,
+					),
+				),
+			),
+			'purchase_units' => array(
+				array(
+					'custom_id'   => (string) $subscription_id,
+					'invoice_id'  => 'MBX-' . $subscription_id . '-' . time(),
+					'description' => wp_html_excerpt( wp_strip_all_tags( $plan['name'] ), 120, '' ),
+					'amount'      => array(
+						'currency_code' => strtoupper( $plan['currency'] ),
+						'value'         => number_format( (float) $plan['price'], 2, '.', '' ),
+					),
+				),
+			),
+		);
+		return self::api_request( 'POST', '/v2/checkout/orders', $body, 'membexa-order-' . $subscription_id );
+	}
+
+	/** Handle return from a PayPal checkout. */
 	public function maybe_handle_return() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Presence check only; nonce is verified below.
 		if ( empty( $_GET['membexa_paypal_return'] ) ) {
@@ -193,6 +202,9 @@ final class PayPal {
 		if ( $plan && Gateways::is_recurring( $plan['billing'] ) ) {
 			self::redirect_account( 'payment_pending' );
 		}
+		if ( ! $plan ) {
+			self::redirect_account( 'payment_failed' );
+		}
 
 		$order_id = isset( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
 		if ( ! $order_id || ( $subscription->gateway_external_id && ! hash_equals( (string) $subscription->gateway_external_id, $order_id ) ) ) {
@@ -205,7 +217,14 @@ final class PayPal {
 		}
 
 		$capture = isset( $response['purchase_units'][0]['payments']['captures'][0] ) ? $response['purchase_units'][0]['payments']['captures'][0] : array();
-		if ( empty( $capture['id'] ) || 'COMPLETED' !== ( isset( $capture['status'] ) ? $capture['status'] : '' ) ) {
+		$amount  = isset( $capture['amount']['value'] ) ? (float) $capture['amount']['value'] : 0;
+		$currency = isset( $capture['amount']['currency_code'] ) ? strtoupper( sanitize_text_field( $capture['amount']['currency_code'] ) ) : '';
+		if (
+			empty( $capture['id'] )
+			|| 'COMPLETED' !== ( isset( $capture['status'] ) ? $capture['status'] : '' )
+			|| abs( (float) $plan['price'] - $amount ) >= 0.01
+			|| strtoupper( $plan['currency'] ) !== $currency
+		) {
 			self::redirect_account( 'payment_failed' );
 		}
 
@@ -215,10 +234,10 @@ final class PayPal {
 				'user_id'         => $subscription->user_id,
 				'subscription_id' => $subscription_id,
 				'gateway'         => 'paypal',
-				'external_id'     => $capture['id'],
+				'external_id'     => sanitize_text_field( $capture['id'] ),
 				'type'            => 'capture',
-				'amount'          => isset( $capture['amount']['value'] ) ? (float) $capture['amount']['value'] : 0,
-				'currency'        => isset( $capture['amount']['currency_code'] ) ? $capture['amount']['currency_code'] : '',
+				'amount'          => $amount,
+				'currency'        => $currency,
 				'status'          => 'paid',
 			)
 		);
@@ -252,9 +271,9 @@ final class PayPal {
 	 * @return WP_REST_Response
 	 */
 	public function webhook( WP_REST_Request $request ) {
-		$settings = Settings::payments();
-		$event    = json_decode( $request->get_body(), true );
-		if ( empty( $settings['paypal_webhook_id'] ) || ! is_array( $event ) ) {
+		$webhook_id = Settings::paypal_webhook_id();
+		$event      = json_decode( $request->get_body(), true );
+		if ( ! $webhook_id || ! is_array( $event ) ) {
 			return new WP_REST_Response( array( 'error' => 'invalid_webhook' ), 400 );
 		}
 
@@ -264,7 +283,7 @@ final class PayPal {
 			'transmission_id'   => $request->get_header( 'paypal-transmission-id' ),
 			'transmission_sig'  => $request->get_header( 'paypal-transmission-sig' ),
 			'transmission_time' => $request->get_header( 'paypal-transmission-time' ),
-			'webhook_id'        => $settings['paypal_webhook_id'],
+			'webhook_id'        => $webhook_id,
 			'webhook_event'     => $event,
 		);
 		$verified = self::api_request( 'POST', '/v1/notifications/verify-webhook-signature', $verification );
@@ -320,11 +339,11 @@ final class PayPal {
 		if ( 'BILLING.SUBSCRIPTION.UPDATED' === $type && $external_id ) {
 			$status = isset( $resource['status'] ) ? strtoupper( sanitize_text_field( $resource['status'] ) ) : '';
 			$map    = array(
-				'ACTIVE'    => 'active',
+				'ACTIVE'           => 'active',
 				'APPROVAL_PENDING' => 'pending',
-				'SUSPENDED' => 'past_due',
-				'CANCELLED' => 'canceled',
-				'EXPIRED'   => 'expired',
+				'SUSPENDED'        => 'past_due',
+				'CANCELLED'        => 'canceled',
+				'EXPIRED'          => 'expired',
 			);
 			if ( isset( $map[ $status ] ) ) {
 				Subscriptions::update_status_by_external_id( $external_id, $map[ $status ] );
@@ -333,24 +352,37 @@ final class PayPal {
 		}
 
 		if ( 'PAYMENT.SALE.COMPLETED' === $type ) {
-			$agreement_id = isset( $resource['billing_agreement_id'] ) ? sanitize_text_field( $resource['billing_agreement_id'] ) : '';
-			$subscription = $agreement_id ? Subscriptions::get_by_external_id( $agreement_id ) : null;
-			if ( $subscription ) {
-				Subscriptions::activate( $subscription->id, $agreement_id );
-				Subscriptions::log_transaction(
-					array(
-						'user_id'         => $subscription->user_id,
-						'subscription_id' => $subscription->id,
-						'gateway'         => 'paypal',
-						'external_id'     => $external_id,
-						'type'            => 'renewal',
-						'amount'          => isset( $resource['amount']['total'] ) ? (float) $resource['amount']['total'] : 0,
-						'currency'        => isset( $resource['amount']['currency'] ) ? $resource['amount']['currency'] : '',
-						'status'          => 'paid',
-					)
-				);
-			}
+			$this->handle_sale_completed( $resource );
 		}
+	}
+
+	/**
+	 * Record a verified PayPal recurring payment.
+	 *
+	 * @param array $resource PayPal sale resource.
+	 * @return void
+	 */
+	private function handle_sale_completed( $resource ) {
+		$agreement_id = isset( $resource['billing_agreement_id'] ) ? sanitize_text_field( $resource['billing_agreement_id'] ) : '';
+		$subscription = $agreement_id ? Subscriptions::get_by_external_id( $agreement_id ) : null;
+		if ( ! $subscription ) {
+			return;
+		}
+
+		$external_id = isset( $resource['id'] ) ? sanitize_text_field( $resource['id'] ) : '';
+		Subscriptions::activate( $subscription->id, $agreement_id );
+		Subscriptions::log_transaction(
+			array(
+				'user_id'         => $subscription->user_id,
+				'subscription_id' => $subscription->id,
+				'gateway'         => 'paypal',
+				'external_id'     => $external_id,
+				'type'            => 'renewal',
+				'amount'          => isset( $resource['amount']['total'] ) ? (float) $resource['amount']['total'] : 0,
+				'currency'        => isset( $resource['amount']['currency'] ) ? $resource['amount']['currency'] : '',
+				'status'          => 'paid',
+			)
+		);
 	}
 
 	/**
@@ -399,11 +431,7 @@ final class PayPal {
 		return is_array( $data ) ? $data : array();
 	}
 
-	/**
-	 * Get and cache a PayPal OAuth access token.
-	 *
-	 * @return string|WP_Error
-	 */
+	/** Get and cache a PayPal OAuth access token. */
 	private static function access_token() {
 		$client_id     = Settings::paypal_client_id();
 		$client_secret = Settings::paypal_client_secret();
@@ -417,12 +445,15 @@ final class PayPal {
 			return $cached;
 		}
 
+		// PayPal OAuth client-credentials authentication requires an HTTP Basic header.
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		$basic = base64_encode( $client_id . ':' . $client_secret );
 		$response = wp_remote_post(
 			self::api_base() . '/v1/oauth2/token',
 			array(
 				'timeout' => 30,
 				'headers' => array(
-					'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $client_secret ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- PayPal OAuth Basic authentication requires Base64 encoding.
+					'Authorization' => 'Basic ' . $basic,
 					'Accept'        => 'application/json',
 				),
 				'body'    => array( 'grant_type' => 'client_credentials' ),
@@ -441,12 +472,7 @@ final class PayPal {
 		return sanitize_text_field( $data['access_token'] );
 	}
 
-	/**
-	 * Find a PayPal approval URL in an API response.
-	 *
-	 * @param array $links HATEOAS links.
-	 * @return string
-	 */
+	/** Find a PayPal approval URL in an API response. */
 	private static function approval_url( $links ) {
 		foreach ( (array) $links as $link ) {
 			if ( ! is_array( $link ) || empty( $link['href'] ) || empty( $link['rel'] ) ) {
@@ -459,43 +485,25 @@ final class PayPal {
 		return '';
 	}
 
-	/**
-	 * Validate that a hosted approval URL belongs to PayPal.
-	 *
-	 * @param string $url URL.
-	 * @return bool
-	 */
+	/** Validate that a hosted approval URL belongs to PayPal. */
 	private static function is_paypal_url( $url ) {
 		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
 		return 'paypal.com' === $host || ( strlen( $host ) > 11 && '.paypal.com' === substr( $host, -11 ) );
 	}
 
-	/**
-	 * API base URL for the selected environment.
-	 *
-	 * @return string
-	 */
+	/** API base URL for the selected environment. */
 	private static function api_base() {
 		$settings = Settings::payments();
 		return ! empty( $settings['paypal_sandbox'] ) ? self::SANDBOX_API : self::LIVE_API;
 	}
 
-	/**
-	 * Configured account page URL.
-	 *
-	 * @return string
-	 */
+	/** Configured account page URL. */
 	private static function account_url() {
 		$general = Settings::general();
 		return $general['account_page_id'] ? get_permalink( $general['account_page_id'] ) : home_url( '/' );
 	}
 
-	/**
-	 * Redirect back to the account page with a notice.
-	 *
-	 * @param string $notice Notice code.
-	 * @return void
-	 */
+	/** Redirect back to the account page with a notice. */
 	private static function redirect_account( $notice ) {
 		wp_safe_redirect( add_query_arg( 'membexa_notice', sanitize_key( $notice ), self::account_url() ) );
 		exit;
