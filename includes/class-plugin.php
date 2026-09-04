@@ -60,7 +60,7 @@ final class Plugin {
 			( new Admin() )->hooks();
 			( new Integrations_Admin() )->hooks();
 			( new Setup() )->hooks();
-			( new Payment_Addons_Admin() )->hooks();
+			( new Payment_Hub_Admin() )->hooks();
 			( new Help() )->hooks();
 		}
 
