@@ -18,11 +18,12 @@ final class Payment_Addons_Admin {
 	/** Register hooks. */
 	public function hooks() {
 		add_action( 'admin_menu', array( $this, 'menu' ), 30 );
-		add_action( 'admin_init', array( $this, 'redirect_legacy_payment_tab' ) );
+		add_action( 'admin_init', array( $this, 'redirect_legacy_payment_screens' ) );
 	}
 
-	/** Add the add-on manager under Membexa. */
+	/** Add the add-on manager under Membexa and remove the legacy core PayPal setup screen. */
 	public function menu() {
+		remove_submenu_page( 'membexa', 'membexa-paypal-setup' );
 		add_submenu_page(
 			'membexa',
 			__( 'Payment Add-ons', 'membexa' ),
@@ -33,8 +34,8 @@ final class Payment_Addons_Admin {
 		);
 	}
 
-	/** Redirect the old core Payments tab so credentials are never edited in core. */
-	public function redirect_legacy_payment_tab() {
+	/** Redirect legacy core payment screens so credentials are never edited in core. */
+	public function redirect_legacy_payment_screens() {
 		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -42,6 +43,15 @@ final class Payment_Addons_Admin {
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Navigation-only redirect.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+
+		if ( 'membexa-paypal-setup' === $page ) {
+			$target = Gateways::is_registered( 'paypal' )
+				? admin_url( 'admin.php?page=membexa-paypal-gateway' )
+				: admin_url( 'admin.php?page=membexa-payment-addons' );
+			wp_safe_redirect( $target );
+			exit;
+		}
+
 		if ( 'membexa-settings' === $page && 'payments' === $tab ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect from PayPal verification result.
 			$paypal_verified = isset( $_GET['membexa_paypal_verified'] );
