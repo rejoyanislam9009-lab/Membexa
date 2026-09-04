@@ -59,15 +59,13 @@ final class Plan {
 	 */
 	public function render_meta_box( $post ) {
 		wp_nonce_field( 'membexa_save_plan', 'membexa_plan_nonce' );
-		$price           = get_post_meta( $post->ID, '_membexa_price', true );
-		$currency        = get_post_meta( $post->ID, '_membexa_currency', true );
-		$billing         = get_post_meta( $post->ID, '_membexa_billing', true );
-		$trial_days      = get_post_meta( $post->ID, '_membexa_trial_days', true );
-		$stripe_price_id = get_post_meta( $post->ID, '_membexa_stripe_price_id', true );
-		$paypal_plan_id  = get_post_meta( $post->ID, '_membexa_paypal_plan_id', true );
-		$features        = get_post_meta( $post->ID, '_membexa_features', true );
-		$currency        = $currency ? $currency : Settings::general()['default_currency'];
-		$billing         = $billing ? $billing : 'free';
+		$price      = get_post_meta( $post->ID, '_membexa_price', true );
+		$currency   = get_post_meta( $post->ID, '_membexa_currency', true );
+		$billing    = get_post_meta( $post->ID, '_membexa_billing', true );
+		$trial_days = get_post_meta( $post->ID, '_membexa_trial_days', true );
+		$features   = get_post_meta( $post->ID, '_membexa_features', true );
+		$currency   = $currency ? $currency : Settings::general()['default_currency'];
+		$billing    = $billing ? $billing : 'free';
 		?>
 		<table class="form-table" role="presentation">
 			<tr>
@@ -95,27 +93,10 @@ final class Plan {
 				<th><label for="membexa_trial_days"><?php esc_html_e( 'Trial days', 'membexa' ); ?></label></th>
 				<td>
 					<input class="small-text" type="number" min="0" max="365" id="membexa_trial_days" name="membexa_trial_days" value="<?php echo esc_attr( $trial_days ); ?>">
-					<p class="description"><?php esc_html_e( 'Stripe can apply this trial dynamically. For PayPal recurring plans, configure any trial period inside the PayPal billing plan itself.', 'membexa' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Payment gateway add-ons can use this value when their billing API supports trial periods.', 'membexa' ); ?></p>
 				</td>
 			</tr>
-			<tr>
-				<th><label for="membexa_stripe_price_id"><?php esc_html_e( 'Stripe Price ID', 'membexa' ); ?></label></th>
-				<td>
-					<input class="regular-text code" id="membexa_stripe_price_id" name="membexa_stripe_price_id" value="<?php echo esc_attr( $stripe_price_id ); ?>" placeholder="price_...">
-					<p class="description"><?php esc_html_e( 'Required when this plan should be purchasable with Stripe.', 'membexa' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th><label for="membexa_paypal_plan_id"><?php esc_html_e( 'PayPal Plan ID', 'membexa' ); ?></label></th>
-				<td>
-					<input class="regular-text code" id="membexa_paypal_plan_id" name="membexa_paypal_plan_id" value="<?php echo esc_attr( $paypal_plan_id ); ?>" placeholder="P-...">
-					<p class="description"><?php esc_html_e( 'Required only for monthly or yearly PayPal subscriptions. One-time and lifetime PayPal payments use this plan’s amount and currency directly.', 'membexa' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th><?php esc_html_e( 'bKash compatibility', 'membexa' ); ?></th>
-				<td><p class="description"><?php esc_html_e( 'bKash becomes available automatically when the plan uses BDT and One-time or Lifetime billing, and bKash is enabled in Settings > Payments.', 'membexa' ); ?></p></td>
-			</tr>
+			<?php do_action( 'membexa_plan_payment_fields', $post ); ?>
 			<tr>
 				<th><label for="membexa_features"><?php esc_html_e( 'Features', 'membexa' ); ?></label></th>
 				<td>
@@ -152,9 +133,8 @@ final class Plan {
 		update_post_meta( $post_id, '_membexa_currency', $currency );
 		update_post_meta( $post_id, '_membexa_billing', $billing );
 		update_post_meta( $post_id, '_membexa_trial_days', isset( $_POST['membexa_trial_days'] ) ? min( 365, absint( $_POST['membexa_trial_days'] ) ) : 0 );
-		update_post_meta( $post_id, '_membexa_stripe_price_id', isset( $_POST['membexa_stripe_price_id'] ) ? sanitize_text_field( wp_unslash( $_POST['membexa_stripe_price_id'] ) ) : '' );
-		update_post_meta( $post_id, '_membexa_paypal_plan_id', isset( $_POST['membexa_paypal_plan_id'] ) ? sanitize_text_field( wp_unslash( $_POST['membexa_paypal_plan_id'] ) ) : '' );
 		update_post_meta( $post_id, '_membexa_features', isset( $_POST['membexa_features'] ) ? sanitize_textarea_field( wp_unslash( $_POST['membexa_features'] ) ) : '' );
+		do_action( 'membexa_save_plan_payment_fields', $post_id );
 	}
 
 	/** Return supported billing models. */
