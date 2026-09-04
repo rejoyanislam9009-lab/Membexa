@@ -32,6 +32,10 @@ require_once MEMBEXA_DIR . 'includes/class-account.php';
 require_once MEMBEXA_DIR . 'includes/class-plan.php';
 require_once MEMBEXA_DIR . 'includes/class-emails.php';
 require_once MEMBEXA_DIR . 'includes/class-subscriptions.php';
+// Legacy gateway classes remain loadable for a safe settings migration, but their checkout/webhook hooks are not started in 1.5.0.
+require_once MEMBEXA_DIR . 'includes/class-stripe.php';
+require_once MEMBEXA_DIR . 'includes/class-paypal.php';
+require_once MEMBEXA_DIR . 'includes/class-bkash.php';
 require_once MEMBEXA_DIR . 'includes/class-gateways.php';
 require_once MEMBEXA_DIR . 'includes/class-access.php';
 require_once MEMBEXA_DIR . 'includes/class-commerce.php';
