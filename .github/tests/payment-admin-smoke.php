@@ -38,21 +38,97 @@ if ( ! $detected ) {
 	exit( 1 );
 }
 
+$false_positive = $detect_method->invoke(
+	$hub,
+	'flow-store-check/flow-store-check.php',
+	array(
+		'Name'        => 'Flow Store Check for WooCommerce',
+		'Description' => 'Checks checkout and payment flows for a WooCommerce store.',
+		'TextDomain'  => 'flow-store-check',
+	)
+);
+if ( $false_positive ) {
+	fwrite( STDERR, "Non-gateway WooCommerce checkout utility was detected as a payment gateway plugin.\n" );
+	exit( 1 );
+}
+
 $metadata_method = new ReflectionMethod( \Membexa\Payment_Hub_Admin::class, 'installed_payment_plugins_from_metadata' );
 $metadata_method->setAccessible( true );
 $metadata = $metadata_method->invoke(
 	$hub,
 	array(
+		plugin_basename( MEMBEXA_FILE ) => array(
+			'Name'        => 'Membexa – Membership & Subscriptions',
+			'Description' => 'WooCommerce membership and modular payment integrations.',
+			'TextDomain'  => 'membexa',
+		),
 		'example-woocommerce-gateway/example.php' => array(
 			'Name'            => 'Example WooCommerce Payment Gateway',
 			'Description'     => 'Adds an example payment gateway to WooCommerce.',
 			'TextDomain'      => 'example-woocommerce-gateway',
 			'RequiresPlugins' => 'woocommerce',
 		),
+		'flow-store-check/flow-store-check.php' => array(
+			'Name'        => 'Flow Store Check for WooCommerce',
+			'Description' => 'Checks checkout and payment flows for a WooCommerce store.',
+			'TextDomain'  => 'flow-store-check',
+		),
 	)
 );
 if ( ! isset( $metadata['example-woocommerce-gateway/example.php'] ) ) {
-	fwrite( STDERR, "Metadata-only payment add-on listing failed.\n" );
+	fwrite( STDERR, "Metadata-only payment gateway listing failed.\n" );
+	exit( 1 );
+}
+if ( isset( $metadata[ plugin_basename( MEMBEXA_FILE ) ] ) || isset( $metadata['flow-store-check/flow-store-check.php'] ) ) {
+	fwrite( STDERR, "Payments hub did not exclude Membexa Core or a non-gateway utility.\n" );
+	exit( 1 );
+}
+
+$api_plugins_method = new ReflectionMethod( \Membexa\Payment_Hub_Admin::class, 'api_plugins' );
+$api_plugins_method->setAccessible( true );
+$api_plugins = $api_plugins_method->invoke(
+	$hub,
+	(object) array(
+		'plugins' => array(
+			array(
+				'name'              => 'Example PayPal for WooCommerce',
+				'slug'              => 'example-paypal-woocommerce',
+				'short_description' => 'A PayPal payment gateway for WooCommerce.',
+			),
+		),
+	)
+);
+if ( 1 !== count( $api_plugins ) ) {
+	fwrite( STDERR, "WordPress.org API result normalization failed.\n" );
+	exit( 1 );
+}
+
+$candidate_method = new ReflectionMethod( \Membexa\Payment_Hub_Admin::class, 'is_repository_payment_candidate' );
+$candidate_method->setAccessible( true );
+if ( ! $candidate_method->invoke( $hub, $api_plugins[0] ) ) {
+	fwrite( STDERR, "Valid WordPress.org WooCommerce gateway result was rejected.\n" );
+	exit( 1 );
+}
+if ( $candidate_method->invoke(
+	$hub,
+	array(
+		'name'              => 'WooCommerce Store Helper',
+		'slug'              => 'woocommerce-store-helper',
+		'short_description' => 'A WooCommerce administration utility.',
+	)
+) ) {
+	fwrite( STDERR, "Unrelated WordPress.org WooCommerce plugin was accepted as a payment gateway.\n" );
+	exit( 1 );
+}
+
+$value_method = new ReflectionMethod( \Membexa\Payment_Hub_Admin::class, 'plugin_api_value' );
+$value_method->setAccessible( true );
+if ( 'example-paypal-woocommerce' !== $value_method->invoke( $hub, $api_plugins[0], 'slug', '' ) ) {
+	fwrite( STDERR, "Array-shaped WordPress.org plugin data could not be read.\n" );
+	exit( 1 );
+}
+if ( 'object-gateway' !== $value_method->invoke( $hub, (object) array( 'slug' => 'object-gateway' ), 'slug', '' ) ) {
+	fwrite( STDERR, "Object-shaped WordPress.org plugin data could not be read.\n" );
 	exit( 1 );
 }
 
@@ -86,10 +162,10 @@ if ( class_exists( '\\WooCommerce' ) && function_exists( 'WC' ) && WC() && WC()-
 		exit( 1 );
 	}
 	$row = $row_method->invoke( $hub, reset( $gateways ) );
-	if ( ! is_array( $row ) || empty( $row['id'] ) || empty( $row['source'] ) ) {
-		fwrite( STDERR, "Safe WooCommerce gateway row generation failed.\n" );
+	if ( ! is_array( $row ) || empty( $row['id'] ) || empty( $row['source'] ) || ! array_key_exists( 'description', $row ) ) {
+		fwrite( STDERR, "Safe live WooCommerce gateway row generation failed.\n" );
 		exit( 1 );
 	}
 }
 
-echo "Membexa fault-tolerant Payments hub smoke test passed.\n";
+echo "Membexa live Payments marketplace smoke test passed.\n";
