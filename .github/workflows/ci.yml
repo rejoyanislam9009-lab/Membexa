@@ -52,16 +52,26 @@ jobs:
             source: addons/membexa-bkash
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare add-on directory
-        run: |
-          mkdir -p "build/${{ matrix.slug }}"
-          rsync -a "${{ matrix.source }}/" "build/${{ matrix.slug }}/"
-      - name: Run WordPress Plugin Check for add-on
-        uses: wordpress/plugin-check-action@v1.1.9
+      - uses: actions/setup-node@v4
         with:
-          build-dir: './build/${{ matrix.slug }}'
-          slug: '${{ matrix.slug }}'
-          ignore-warnings: true
+          node-version: '24'
+      - name: Install wp-env
+        run: npm install -g @wordpress/env
+      - name: Start WordPress with Membexa Core and add-on
+        run: |
+          ROOT_DIR="$(pwd)"
+          CORE_DIR="$ROOT_DIR/build/membexa"
+          ADDON_DIR="$ROOT_DIR/build/${{ matrix.slug }}"
+          mkdir -p "$CORE_DIR" "$ADDON_DIR"
+          rsync -a ./ "$CORE_DIR/" --exclude-from='.distignore'
+          rsync -a "${{ matrix.source }}/" "$ADDON_DIR/"
+          printf '{"core":null,"port":8892,"testsEnvironment":false,"mappings":{"wp-content/plugins/membexa":"%s","wp-content/plugins/${{ matrix.slug }}":"%s"}}\n' "$CORE_DIR" "$ADDON_DIR" > .wp-env.json
+          wp-env start --update
+          wp-env run cli wp plugin install plugin-check --activate
+          wp-env run cli wp plugin activate membexa
+          wp-env run cli wp plugin activate '${{ matrix.slug }}'
+      - name: Run official WordPress Plugin Check for add-on
+        run: wp-env run cli wp plugin check '${{ matrix.slug }}' --ignore-warnings --format=table --require=./wp-content/plugins/plugin-check/cli.php
 
   woocommerce-smoke:
     runs-on: ubuntu-latest
