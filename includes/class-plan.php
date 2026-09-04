@@ -17,22 +17,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Plan {
 	const POST_TYPE = 'membexa_plan';
 
-	/**
-	 * Register hooks.
-	 *
-	 * @return void
-	 */
+	/** Register hooks. */
 	public function hooks() {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save' ) );
 	}
 
-	/**
-	 * Register the internal membership plan post type.
-	 *
-	 * @return void
-	 */
+	/** Register the internal membership plan post type. */
 	public function register_post_type() {
 		register_post_type(
 			self::POST_TYPE,
@@ -55,11 +47,7 @@ final class Plan {
 		);
 	}
 
-	/**
-	 * Register plan meta boxes.
-	 *
-	 * @return void
-	 */
+	/** Register plan meta boxes. */
 	public function add_meta_boxes() {
 		add_meta_box( 'membexa_plan_details', __( 'Plan Details', 'membexa' ), array( $this, 'render_meta_box' ), self::POST_TYPE, 'normal', 'high' );
 	}
@@ -68,7 +56,6 @@ final class Plan {
 	 * Render plan configuration fields.
 	 *
 	 * @param \WP_Post $post Plan post object.
-	 * @return void
 	 */
 	public function render_meta_box( $post ) {
 		wp_nonce_field( 'membexa_save_plan', 'membexa_plan_nonce' );
@@ -77,6 +64,7 @@ final class Plan {
 		$billing         = get_post_meta( $post->ID, '_membexa_billing', true );
 		$trial_days      = get_post_meta( $post->ID, '_membexa_trial_days', true );
 		$stripe_price_id = get_post_meta( $post->ID, '_membexa_stripe_price_id', true );
+		$paypal_plan_id  = get_post_meta( $post->ID, '_membexa_paypal_plan_id', true );
 		$features        = get_post_meta( $post->ID, '_membexa_features', true );
 		$currency        = $currency ? $currency : Settings::general()['default_currency'];
 		$billing         = $billing ? $billing : 'free';
@@ -105,14 +93,28 @@ final class Plan {
 			</tr>
 			<tr>
 				<th><label for="membexa_trial_days"><?php esc_html_e( 'Trial days', 'membexa' ); ?></label></th>
-				<td><input class="small-text" type="number" min="0" max="365" id="membexa_trial_days" name="membexa_trial_days" value="<?php echo esc_attr( $trial_days ); ?>"></td>
+				<td>
+					<input class="small-text" type="number" min="0" max="365" id="membexa_trial_days" name="membexa_trial_days" value="<?php echo esc_attr( $trial_days ); ?>">
+					<p class="description"><?php esc_html_e( 'Stripe can apply this trial dynamically. For PayPal recurring plans, configure any trial period inside the PayPal billing plan itself.', 'membexa' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="membexa_stripe_price_id"><?php esc_html_e( 'Stripe Price ID', 'membexa' ); ?></label></th>
 				<td>
 					<input class="regular-text code" id="membexa_stripe_price_id" name="membexa_stripe_price_id" value="<?php echo esc_attr( $stripe_price_id ); ?>" placeholder="price_...">
-					<p class="description"><?php esc_html_e( 'Required for paid Stripe Checkout plans. The Stripe Price currency and billing interval should match this plan.', 'membexa' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Required when this plan should be purchasable with Stripe.', 'membexa' ); ?></p>
 				</td>
+			</tr>
+			<tr>
+				<th><label for="membexa_paypal_plan_id"><?php esc_html_e( 'PayPal Plan ID', 'membexa' ); ?></label></th>
+				<td>
+					<input class="regular-text code" id="membexa_paypal_plan_id" name="membexa_paypal_plan_id" value="<?php echo esc_attr( $paypal_plan_id ); ?>" placeholder="P-...">
+					<p class="description"><?php esc_html_e( 'Required only for monthly or yearly PayPal subscriptions. One-time and lifetime PayPal payments use this plan’s amount and currency directly.', 'membexa' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><?php esc_html_e( 'bKash compatibility', 'membexa' ); ?></th>
+				<td><p class="description"><?php esc_html_e( 'bKash becomes available automatically when the plan uses BDT and One-time or Lifetime billing, and bKash is enabled in Settings > Payments.', 'membexa' ); ?></p></td>
 			</tr>
 			<tr>
 				<th><label for="membexa_features"><?php esc_html_e( 'Features', 'membexa' ); ?></label></th>
@@ -129,7 +131,6 @@ final class Plan {
 	 * Save plan metadata.
 	 *
 	 * @param int $post_id Plan post ID.
-	 * @return void
 	 */
 	public function save( $post_id ) {
 		if ( ! isset( $_POST['membexa_plan_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['membexa_plan_nonce'] ) ), 'membexa_save_plan' ) ) {
@@ -152,14 +153,11 @@ final class Plan {
 		update_post_meta( $post_id, '_membexa_billing', $billing );
 		update_post_meta( $post_id, '_membexa_trial_days', isset( $_POST['membexa_trial_days'] ) ? min( 365, absint( $_POST['membexa_trial_days'] ) ) : 0 );
 		update_post_meta( $post_id, '_membexa_stripe_price_id', isset( $_POST['membexa_stripe_price_id'] ) ? sanitize_text_field( wp_unslash( $_POST['membexa_stripe_price_id'] ) ) : '' );
+		update_post_meta( $post_id, '_membexa_paypal_plan_id', isset( $_POST['membexa_paypal_plan_id'] ) ? sanitize_text_field( wp_unslash( $_POST['membexa_paypal_plan_id'] ) ) : '' );
 		update_post_meta( $post_id, '_membexa_features', isset( $_POST['membexa_features'] ) ? sanitize_textarea_field( wp_unslash( $_POST['membexa_features'] ) ) : '' );
 	}
 
-	/**
-	 * Return supported billing models.
-	 *
-	 * @return array
-	 */
+	/** Return supported billing models. */
 	public static function billing_options() {
 		return array(
 			'free'     => __( 'Free', 'membexa' ),
@@ -190,15 +188,12 @@ final class Plan {
 			'billing'         => (string) get_post_meta( $post->ID, '_membexa_billing', true ),
 			'trial_days'      => absint( get_post_meta( $post->ID, '_membexa_trial_days', true ) ),
 			'stripe_price_id' => (string) get_post_meta( $post->ID, '_membexa_stripe_price_id', true ),
+			'paypal_plan_id'  => (string) get_post_meta( $post->ID, '_membexa_paypal_plan_id', true ),
 			'features'        => (string) get_post_meta( $post->ID, '_membexa_features', true ),
 		);
 	}
 
-	/**
-	 * Return all published membership plans.
-	 *
-	 * @return array
-	 */
+	/** Return all published membership plans. */
 	public static function all() {
 		$posts = get_posts(
 			array(
