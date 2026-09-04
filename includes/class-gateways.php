@@ -9,85 +9,58 @@ namespace Membexa;
 
 use WP_Error;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /** Delegates paid membership checkout to WooCommerce and its installed gateways. */
 final class Gateways {
-	/** Return enabled WooCommerce payment gateways. */
+	/** Return enabled WooCommerce gateway labels for administrator status only. */
 	public static function enabled() {
-		if ( ! self::woocommerce_ready() || ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
-			return array();
-		}
-		$available = array();
-		foreach ( WC()->payment_gateways()->get_available_payment_gateways() as $id => $gateway ) {
-			$available[ sanitize_key( $id ) ] = wp_strip_all_tags( $gateway->get_title() );
-		}
-		return $available;
+		if ( ! self::woocommerce_ready() || ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) { return array(); }
+		$enabled = array();
+		foreach ( WC()->payment_gateways()->payment_gateways() as $id => $gateway ) {
+			if ( isset( $gateway->enabled ) && 'yes' === $gateway->enabled ) {
+				$enabled[ sanitize_key( $id ) ] = wp_strip_all_tags( $gateway->get_title() );
+			}
+		return $enabled;
 	}
 
-	/** Paid plans are compatible when linked to a valid WooCommerce product. */
+	/** Paid plans expose one neutral checkout bridge; actual payment selection stays in WooCommerce. */
 	public static function available_for_plan( $plan ) {
-		if ( ! is_array( $plan ) || 'free' === $plan['billing'] || 0.0 === (float) $plan['price'] ) {
-			return array();
-		}
+		if ( ! is_array( $plan ) || 'free' === $plan['billing'] || 0.0 === (float) $plan['price'] ) { return array(); }
 		$product_id = self::product_id_for_plan( $plan['id'] );
-		if ( ! self::woocommerce_ready() || ! $product_id || ! wc_get_product( $product_id ) ) {
-			return array();
-		}
-		return self::enabled();
+		if ( ! self::woocommerce_ready() || ! $product_id || ! wc_get_product( $product_id ) ) { return array(); }
+		return array( 'woocommerce' => __( 'Secure checkout', 'membexa' ) );
 	}
 
 	/** Start checkout through the linked WooCommerce product. */
 	public static function start_checkout( $gateway, $user_id, $plan_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		$plan = Plan::get( $plan_id );
-		if ( ! $plan ) {
-			return new WP_Error( 'membexa_invalid_plan', __( 'The selected membership plan is not available.', 'membexa' ) );
-		}
-		if ( ! self::woocommerce_ready() ) {
-			return new WP_Error( 'membexa_woocommerce_required', __( 'WooCommerce must be active to process paid Membexa plans.', 'membexa' ) );
-		}
+		if ( ! $plan ) { return new WP_Error( 'membexa_invalid_plan', __( 'The selected membership plan is not available.', 'membexa' ) ); }
+		if ( ! self::woocommerce_ready() ) { return new WP_Error( 'membexa_woocommerce_required', __( 'WooCommerce must be active to process paid Membexa plans.', 'membexa' ) ); }
 		$product_id = self::product_id_for_plan( $plan_id );
 		$product    = $product_id ? wc_get_product( $product_id ) : false;
-		if ( ! $product || ! $product->is_purchasable() ) {
-			return new WP_Error( 'membexa_payment_product_missing', __( 'This plan is not linked to a purchasable WooCommerce product.', 'membexa' ) );
-		}
-		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
-			return new WP_Error( 'membexa_cart_unavailable', __( 'WooCommerce cart is not available.', 'membexa' ) );
-		}
+		if ( ! $product || ! $product->is_purchasable() ) { return new WP_Error( 'membexa_payment_product_missing', __( 'This plan is not linked to a purchasable WooCommerce product.', 'membexa' ) ); }
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) { return new WP_Error( 'membexa_cart_unavailable', __( 'WooCommerce cart is not available.', 'membexa' ) ); }
 		WC()->cart->empty_cart();
 		$added = WC()->cart->add_to_cart( $product_id, 1, 0, array(), array( 'membexa_plan_id' => absint( $plan_id ) ) );
-		if ( ! $added ) {
-			return new WP_Error( 'membexa_cart_add_failed', __( 'The membership product could not be added to the WooCommerce cart.', 'membexa' ) );
-		}
+		if ( ! $added ) { return new WP_Error( 'membexa_cart_add_failed', __( 'The membership product could not be added to the WooCommerce cart.', 'membexa' ) ); }
 		return wc_get_checkout_url();
 	}
 
 	/** Cancel an entitlement through WooCommerce Subscriptions when applicable. */
 	public static function cancel( $subscription ) {
-		if ( ! $subscription ) {
-			return new WP_Error( 'membexa_invalid_subscription', __( 'The selected subscription could not be found.', 'membexa' ) );
-		}
-		if ( 'woocommerce_subscription' === $subscription->gateway ) {
-			return Commerce::cancel_woocommerce_subscription( $subscription );
-		}
+		if ( ! $subscription ) { return new WP_Error( 'membexa_invalid_subscription', __( 'The selected subscription could not be found.', 'membexa' ) ); }
+		if ( 'woocommerce_subscription' === $subscription->gateway ) { return Commerce::cancel_woocommerce_subscription( $subscription ); }
 		Subscriptions::cancel_local( $subscription->id );
 		return 'cancelled';
 	}
 
 	/** Determine whether a billing model is recurring. */
-	public static function is_recurring( $billing ) {
-		return in_array( $billing, array( 'monthly', 'yearly' ), true );
-	}
+	public static function is_recurring( $billing ) { return in_array( $billing, array( 'monthly', 'yearly' ), true ); }
 
 	/** Get the WooCommerce product linked to a plan. */
-	public static function product_id_for_plan( $plan_id ) {
-		return absint( get_post_meta( absint( $plan_id ), '_membexa_payment_product_id', true ) );
-	}
+	public static function product_id_for_plan( $plan_id ) { return absint( get_post_meta( absint( $plan_id ), '_membexa_payment_product_id', true ) ); }
 
 	/** Whether WooCommerce is available for paid checkout. */
-	public static function woocommerce_ready() {
-		return Account::woocommerce_active() && function_exists( 'wc_get_product' ) && function_exists( 'wc_get_checkout_url' );
-	}
+	public static function woocommerce_ready() { return Account::woocommerce_active() && function_exists( 'wc_get_product' ) && function_exists( 'wc_get_checkout_url' ); }
 }
