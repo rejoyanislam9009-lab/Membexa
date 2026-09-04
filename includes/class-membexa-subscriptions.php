@@ -110,7 +110,7 @@ final class Subscriptions {
 			array( 'status' => 'canceled', 'updated_at' => current_time( 'mysql', true ) ),
 			array( 'id' => absint( $subscription_id ) )
 		);
-		if ( false !== $updated && 'canceled' !== $subscription->status ) {
+		if ( false !== $updated && in_array( $subscription->status, array( 'active', 'trialing' ), true ) ) {
 			Emails::membership_canceled( $subscription->user_id, $subscription->plan_id );
 		}
 		return false !== $updated;

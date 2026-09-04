@@ -55,7 +55,8 @@ final class Shortcodes {
 		if ( email_exists( $email ) ) {
 			$this->redirect_notice( 'email_exists' );
 		}
-		$username_base = sanitize_user( current( explode( '@', $email ) ), true );
+		$email_name    = strstr( $email, '@', true );
+		$username_base = sanitize_user( $email_name ? $email_name : 'member', true );
 		$username_base = $username_base ? $username_base : 'member';
 		$username      = $username_base;
 		$counter       = 1;
@@ -98,7 +99,7 @@ final class Shortcodes {
 		if ( is_wp_error( $url ) ) {
 			$this->redirect_notice( 'checkout_error' );
 		}
-		wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- URL is validated as a Stripe host by the gateway.
+		wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- URL is validated as a Stripe Checkout host by the gateway.
 		exit;
 	}
 
@@ -122,9 +123,9 @@ final class Shortcodes {
 	}
 
 	public function pricing( $atts ) {
-		$atts = shortcode_atts( array( 'register_url' => '' ), $atts, 'membexa_pricing' );
+		$atts         = shortcode_atts( array( 'register_url' => '' ), $atts, 'membexa_pricing' );
 		$register_url = $atts['register_url'] ? esc_url_raw( $atts['register_url'] ) : get_permalink();
-		$plans = Plan::all();
+		$plans        = Plan::all();
 		if ( empty( $plans ) ) {
 			return '<div class="membexa-notice">' . esc_html__( 'No membership plans are available yet.', 'membexa' ) . '</div>';
 		}
@@ -234,21 +235,21 @@ final class Shortcodes {
 	private function render_notice() {
 		$code = isset( $_GET['membexa_notice'] ) ? sanitize_key( wp_unslash( $_GET['membexa_notice'] ) ) : '';
 		$messages = array(
-			'payment_success'       => __( 'Payment received. Your membership will be activated as soon as the payment confirmation arrives.', 'membexa' ),
-			'payment_cancelled'     => __( 'Checkout was canceled. No membership access was activated.', 'membexa' ),
-			'membership_active'     => __( 'Your membership is active.', 'membexa' ),
-			'already_member'        => __( 'You already have access through this plan.', 'membexa' ),
-			'already_logged_in'     => __( 'You are already signed in.', 'membexa' ),
-			'invalid_registration'  => __( 'Please enter a valid email, a password of at least 8 characters, and a valid plan.', 'membexa' ),
-			'email_exists'          => __( 'An account already exists for this email. Please sign in instead.', 'membexa' ),
-			'registration_failed'   => __( 'The account could not be created.', 'membexa' ),
-			'invalid_plan'          => __( 'The selected membership plan is not available.', 'membexa' ),
-			'checkout_error'        => __( 'Checkout could not be started. Please contact the site administrator.', 'membexa' ),
-			'security'              => __( 'The request could not be verified. Please try again.', 'membexa' ),
-			'invalid_subscription'  => __( 'The selected subscription could not be found.', 'membexa' ),
-			'cancel_scheduled'      => __( 'Your subscription will cancel at the end of the current billing period.', 'membexa' ),
-			'cancelled'             => __( 'Your membership has been canceled.', 'membexa' ),
-			'cancel_error'          => __( 'The cancellation request could not be completed.', 'membexa' ),
+			'payment_success'      => __( 'Payment received. Your membership will be activated as soon as the payment confirmation arrives.', 'membexa' ),
+			'payment_cancelled'    => __( 'Checkout was canceled. No membership access was activated.', 'membexa' ),
+			'membership_active'    => __( 'Your membership is active.', 'membexa' ),
+			'already_member'       => __( 'You already have access through this plan.', 'membexa' ),
+			'already_logged_in'    => __( 'You are already signed in.', 'membexa' ),
+			'invalid_registration' => __( 'Please enter a valid email, a password of at least 8 characters, and a valid plan.', 'membexa' ),
+			'email_exists'         => __( 'An account already exists for this email. Please sign in instead.', 'membexa' ),
+			'registration_failed'  => __( 'The account could not be created.', 'membexa' ),
+			'invalid_plan'         => __( 'The selected membership plan is not available.', 'membexa' ),
+			'checkout_error'       => __( 'Checkout could not be started. Please contact the site administrator.', 'membexa' ),
+			'security'             => __( 'The request could not be verified. Please try again.', 'membexa' ),
+			'invalid_subscription' => __( 'The selected subscription could not be found.', 'membexa' ),
+			'cancel_scheduled'     => __( 'Your subscription will cancel at the end of the current billing period.', 'membexa' ),
+			'cancelled'            => __( 'Your membership has been canceled.', 'membexa' ),
+			'cancel_error'         => __( 'The cancellation request could not be completed.', 'membexa' ),
 		);
 		if ( $code && isset( $messages[ $code ] ) ) {
 			echo '<div class="membexa-notice" role="status">' . esc_html( $messages[ $code ] ) . '</div>';

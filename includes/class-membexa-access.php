@@ -15,10 +15,17 @@ final class Access {
 	public function hooks() {
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
 		add_action( 'save_post', array( $this, 'save' ) );
+		add_action( 'init', array( $this, 'register_rest_filters' ), 100 );
 		add_filter( 'the_content', array( $this, 'filter_content' ), 20 );
 		add_filter( 'the_excerpt', array( $this, 'filter_excerpt' ), 20 );
-		add_filter( 'rest_prepare_post', array( $this, 'filter_rest' ), 20, 3 );
-		add_filter( 'rest_prepare_page', array( $this, 'filter_rest' ), 20, 3 );
+	}
+
+	public function register_rest_filters() {
+		$post_types = get_post_types( array( 'public' => true, 'show_in_rest' => true ), 'names' );
+		unset( $post_types['attachment'] );
+		foreach ( $post_types as $post_type ) {
+			add_filter( 'rest_prepare_' . $post_type, array( $this, 'filter_rest' ), 20, 3 );
+		}
 	}
 
 	public function add_meta_box() {
@@ -95,7 +102,7 @@ final class Access {
 		}
 		$data = $response->get_data();
 		if ( isset( $data['content'] ) ) {
-			$data['content']['rendered'] = wp_kses_post( $this->restricted_message() );
+			$data['content']['rendered']  = wp_kses_post( $this->restricted_message() );
 			$data['content']['protected'] = true;
 		}
 		if ( isset( $data['excerpt'] ) ) {

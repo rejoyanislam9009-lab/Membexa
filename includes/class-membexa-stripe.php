@@ -58,9 +58,9 @@ final class Stripe {
 			return new WP_Error( 'membexa_subscription_create', __( 'The subscription record could not be created.', 'membexa' ) );
 		}
 
-		$general    = Settings::general();
+		$general     = Settings::general();
 		$account_url = $general['account_page_id'] ? get_permalink( $general['account_page_id'] ) : home_url( '/' );
-		$body       = array(
+		$body        = array(
 			'mode'                            => $mode,
 			'client_reference_id'             => (string) $user_id,
 			'customer_email'                  => $user->user_email,
@@ -86,7 +86,7 @@ final class Stripe {
 			return new WP_Error( 'membexa_stripe_response', __( 'Stripe returned an incomplete Checkout response.', 'membexa' ) );
 		}
 		$host = wp_parse_url( $response['url'], PHP_URL_HOST );
-		if ( ! $host || ( 'checkout.stripe.com' !== $host && ! str_ends_with( $host, '.stripe.com' ) ) ) {
+		if ( 'checkout.stripe.com' !== $host ) {
 			Subscriptions::cancel_local( $subscription_id );
 			return new WP_Error( 'membexa_stripe_url', __( 'Stripe returned an unexpected Checkout URL.', 'membexa' ) );
 		}
@@ -203,12 +203,12 @@ final class Stripe {
 			return;
 		}
 		$map = array(
-			'active'    => 'active',
-			'trialing'  => 'trialing',
-			'past_due'  => 'past_due',
-			'unpaid'    => 'past_due',
-			'canceled'  => 'canceled',
-			'incomplete'=> 'pending',
+			'active'     => 'active',
+			'trialing'   => 'trialing',
+			'past_due'   => 'past_due',
+			'unpaid'     => 'past_due',
+			'canceled'   => 'canceled',
+			'incomplete' => 'pending',
 		);
 		$status = isset( $subscription['status'], $map[ $subscription['status'] ] ) ? $map[ $subscription['status'] ] : 'pending';
 		Subscriptions::update_status_by_external_id(
