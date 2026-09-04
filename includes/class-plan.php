@@ -11,20 +11,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Registers and manages membership plans.
+ */
 final class Plan {
 	const POST_TYPE = 'membexa_plan';
 
+	/**
+	 * Register hooks.
+	 *
+	 * @return void
+	 */
 	public function hooks() {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save' ) );
 	}
 
+	/**
+	 * Register the internal membership plan post type.
+	 *
+	 * @return void
+	 */
 	public function register_post_type() {
 		register_post_type(
 			self::POST_TYPE,
 			array(
-				'labels' => array(
+				'labels'              => array(
 					'name'          => __( 'Plans', 'membexa' ),
 					'singular_name' => __( 'Plan', 'membexa' ),
 					'add_new_item'  => __( 'Add New Plan', 'membexa' ),
@@ -42,10 +55,21 @@ final class Plan {
 		);
 	}
 
+	/**
+	 * Register plan meta boxes.
+	 *
+	 * @return void
+	 */
 	public function add_meta_boxes() {
 		add_meta_box( 'membexa_plan_details', __( 'Plan Details', 'membexa' ), array( $this, 'render_meta_box' ), self::POST_TYPE, 'normal', 'high' );
 	}
 
+	/**
+	 * Render plan configuration fields.
+	 *
+	 * @param \WP_Post $post Plan post object.
+	 * @return void
+	 */
 	public function render_meta_box( $post ) {
 		wp_nonce_field( 'membexa_save_plan', 'membexa_plan_nonce' );
 		$price           = get_post_meta( $post->ID, '_membexa_price', true );
@@ -64,15 +88,20 @@ final class Plan {
 			</tr>
 			<tr>
 				<th><label for="membexa_currency"><?php esc_html_e( 'Currency', 'membexa' ); ?></label></th>
-				<td><input class="small-text" maxlength="3" id="membexa_currency" name="membexa_currency" value="<?php echo esc_attr( $currency ); ?>"> <p class="description"><?php esc_html_e( 'Three-letter ISO currency code, for example USD, EUR, GBP, SAR, AED or BDT.', 'membexa' ); ?></p></td>
+				<td>
+					<input class="small-text" maxlength="3" id="membexa_currency" name="membexa_currency" value="<?php echo esc_attr( $currency ); ?>">
+					<p class="description"><?php esc_html_e( 'Three-letter ISO currency code, for example USD, EUR, GBP, SAR, AED or BDT.', 'membexa' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="membexa_billing"><?php esc_html_e( 'Billing', 'membexa' ); ?></label></th>
-				<td><select id="membexa_billing" name="membexa_billing">
-					<?php foreach ( self::billing_options() as $value => $label ) : ?>
-						<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $billing, $value ); ?>><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select></td>
+				<td>
+					<select id="membexa_billing" name="membexa_billing">
+						<?php foreach ( self::billing_options() as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $billing, $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="membexa_trial_days"><?php esc_html_e( 'Trial days', 'membexa' ); ?></label></th>
@@ -80,16 +109,28 @@ final class Plan {
 			</tr>
 			<tr>
 				<th><label for="membexa_stripe_price_id"><?php esc_html_e( 'Stripe Price ID', 'membexa' ); ?></label></th>
-				<td><input class="regular-text code" id="membexa_stripe_price_id" name="membexa_stripe_price_id" value="<?php echo esc_attr( $stripe_price_id ); ?>" placeholder="price_..."><p class="description"><?php esc_html_e( 'Required for paid Stripe Checkout plans. The Stripe Price currency and billing interval should match this plan.', 'membexa' ); ?></p></td>
+				<td>
+					<input class="regular-text code" id="membexa_stripe_price_id" name="membexa_stripe_price_id" value="<?php echo esc_attr( $stripe_price_id ); ?>" placeholder="price_...">
+					<p class="description"><?php esc_html_e( 'Required for paid Stripe Checkout plans. The Stripe Price currency and billing interval should match this plan.', 'membexa' ); ?></p>
+				</td>
 			</tr>
 			<tr>
 				<th><label for="membexa_features"><?php esc_html_e( 'Features', 'membexa' ); ?></label></th>
-				<td><textarea class="large-text" rows="6" id="membexa_features" name="membexa_features"><?php echo esc_textarea( $features ); ?></textarea><p class="description"><?php esc_html_e( 'One feature per line. Used by the pricing shortcode.', 'membexa' ); ?></p></td>
+				<td>
+					<textarea class="large-text" rows="6" id="membexa_features" name="membexa_features"><?php echo esc_textarea( $features ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'One feature per line. Used by the pricing shortcode.', 'membexa' ); ?></p>
+				</td>
 			</tr>
 		</table>
 		<?php
 	}
 
+	/**
+	 * Save plan metadata.
+	 *
+	 * @param int $post_id Plan post ID.
+	 * @return void
+	 */
 	public function save( $post_id ) {
 		if ( ! isset( $_POST['membexa_plan_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['membexa_plan_nonce'] ) ), 'membexa_save_plan' ) ) {
 			return;
@@ -103,7 +144,8 @@ final class Plan {
 		$billing         = in_array( $billing, $billing_allowed, true ) ? $billing : 'free';
 		$currency        = isset( $_POST['membexa_currency'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['membexa_currency'] ) ) ) : 'USD';
 		$currency        = preg_match( '/^[A-Z]{3}$/', $currency ) ? $currency : 'USD';
-		$price           = isset( $_POST['membexa_price'] ) ? max( 0, (float) wp_unslash( $_POST['membexa_price'] ) ) : 0;
+		$price_raw       = isset( $_POST['membexa_price'] ) ? sanitize_text_field( wp_unslash( $_POST['membexa_price'] ) ) : '0';
+		$price           = max( 0, (float) $price_raw );
 
 		update_post_meta( $post_id, '_membexa_price', number_format( $price, 2, '.', '' ) );
 		update_post_meta( $post_id, '_membexa_currency', $currency );
@@ -113,6 +155,11 @@ final class Plan {
 		update_post_meta( $post_id, '_membexa_features', isset( $_POST['membexa_features'] ) ? sanitize_textarea_field( wp_unslash( $_POST['membexa_features'] ) ) : '' );
 	}
 
+	/**
+	 * Return supported billing models.
+	 *
+	 * @return array
+	 */
 	public static function billing_options() {
 		return array(
 			'free'     => __( 'Free', 'membexa' ),
@@ -123,6 +170,12 @@ final class Plan {
 		);
 	}
 
+	/**
+	 * Get a published plan.
+	 *
+	 * @param int $plan_id Plan post ID.
+	 * @return array|null
+	 */
 	public static function get( $plan_id ) {
 		$post = get_post( $plan_id );
 		if ( ! $post || self::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
@@ -141,13 +194,21 @@ final class Plan {
 		);
 	}
 
+	/**
+	 * Return all published membership plans.
+	 *
+	 * @return array
+	 */
 	public static function all() {
 		$posts = get_posts(
 			array(
 				'post_type'      => self::POST_TYPE,
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
-				'orderby'        => array( 'menu_order' => 'ASC', 'title' => 'ASC' ),
+				'orderby'        => array(
+					'menu_order' => 'ASC',
+					'title'      => 'ASC',
+				),
 			)
 		);
 		$plans = array();
