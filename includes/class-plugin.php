@@ -63,6 +63,7 @@ final class Plugin {
 			( new Admin() )->hooks();
 			( new Integrations_Admin() )->hooks();
 			( new Setup() )->hooks();
+			( new PayPal_Connection() )->hooks();
 			( new Help() )->hooks();
 		}
 
