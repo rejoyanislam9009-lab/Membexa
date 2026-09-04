@@ -70,11 +70,11 @@ jobs:
           mkdir -p build/membexa
           rsync -a ./ build/membexa/ --exclude-from='.distignore'
           cd build
-          zip -r membexa-1.4.0.zip membexa
+          zip -r membexa-1.4.1.zip membexa
       - name: Upload installable ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: membexa-1.4.0
-          path: build/membexa-1.4.0.zip
+          name: membexa-1.4.1
+          path: build/membexa-1.4.1.zip
           if-no-files-found: error
           compression-level: 0
