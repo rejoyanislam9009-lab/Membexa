@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Membexa pages and shortcodes</title>
+  <desc id="desc">Annotated visual showing the required WordPress pages, Membexa shortcodes, and general settings page assignment.</desc>
+  <rect width="1200" height="650" fill="#f6f7f7"/>
+  <text x="55" y="70" font-family="Arial, sans-serif" font-size="31" font-weight="700" fill="#1d2327">Pages &amp; shortcodes / পেজ ও শর্টকোড</text>
+  <text x="55" y="105" font-family="Arial, sans-serif" font-size="18" fill="#50575e">Create these pages first, then assign Pricing and Account in Membexa Settings.</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="55" y="145" width="330" height="180" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+    <circle cx="90" cy="182" r="23" fill="#2271b1"/><text x="84" y="190" font-size="19" font-weight="700" fill="#fff">1</text>
+    <text x="125" y="188" font-size="22" font-weight="700" fill="#1d2327">Pricing / প্রাইসিং</text>
+    <rect x="85" y="220" width="270" height="48" rx="6" fill="#f0f0f1"/>
+    <text x="100" y="250" font-family="monospace" font-size="16" fill="#1d2327">[membexa_pricing]</text>
+    <text x="85" y="300" font-size="16" fill="#50575e">Shows published membership plans.</text>
+
+    <rect x="435" y="145" width="330" height="180" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+    <circle cx="470" cy="182" r="23" fill="#2271b1"/><text x="464" y="190" font-size="19" font-weight="700" fill="#fff">2</text>
+    <text x="505" y="188" font-size="22" font-weight="700" fill="#1d2327">Join / রেজিস্টার</text>
+    <rect x="465" y="220" width="270" height="48" rx="6" fill="#f0f0f1"/>
+    <text x="480" y="250" font-family="monospace" font-size="16" fill="#1d2327">[membexa_register]</text>
+    <text x="465" y="300" font-size="16" fill="#50575e">Account creation + plan + payment method.</text>
+
+    <rect x="815" y="145" width="330" height="180" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+    <circle cx="850" cy="182" r="23" fill="#2271b1"/><text x="844" y="190" font-size="19" font-weight="700" fill="#fff">3</text>
+    <text x="885" y="188" font-size="22" font-weight="700" fill="#1d2327">Account / অ্যাকাউন্ট</text>
+    <rect x="845" y="220" width="270" height="48" rx="6" fill="#f0f0f1"/>
+    <text x="860" y="250" font-family="monospace" font-size="16" fill="#1d2327">[membexa_account]</text>
+    <text x="845" y="300" font-size="16" fill="#50575e">Shows membership status and cancellation.</text>
+
+    <rect x="120" y="390" width="960" height="190" rx="16" fill="#fff" stroke="#72aee6" stroke-width="2"/>
+    <circle cx="160" cy="430" r="23" fill="#2271b1"/><text x="154" y="438" font-size="19" font-weight="700" fill="#fff">4</text>
+    <text x="200" y="438" font-size="24" font-weight="700" fill="#1d2327">Membexa → Settings → General</text>
+    <text x="200" y="475" font-size="18" fill="#50575e">Pricing page  →  select your Pricing page</text>
+    <text x="200" y="507" font-size="18" fill="#50575e">Account page  →  select your Account page</text>
+    <text x="200" y="539" font-size="18" fill="#50575e">Restricted content message  →  write the message non-members should see</text>
+    <text x="200" y="568" font-size="17" fill="#135e96">বাংলা: General Settings-এ Pricing ও Account পেজ সিলেক্ট করে Save Changes করুন।</text>
+  </g>
+</svg>
