@@ -61,6 +61,9 @@ final class Access {
 			'names'
 		);
 		unset( $post_types['attachment'] );
+		if ( Account::woocommerce_active() ) {
+			unset( $post_types['product'] );
+		}
 
 		foreach ( $post_types as $post_type ) {
 			add_meta_box( 'membexa_access', __( 'Membexa Access', 'membexa' ), array( $this, 'render_meta_box' ), $post_type, 'side', 'default' );
