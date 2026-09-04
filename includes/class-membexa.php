@@ -24,6 +24,8 @@ final class Plugin {
 	private function __construct() {}
 
 	public function run() {
+		$this->maybe_upgrade();
+
 		( new Settings() )->hooks();
 		( new Plan() )->hooks();
 		( new Subscriptions() )->hooks();
@@ -39,9 +41,21 @@ final class Plugin {
 		add_action( 'wp_enqueue_scripts', array( $this, 'public_assets' ) );
 	}
 
+	private function maybe_upgrade() {
+		$installed = (string) get_option( 'membexa_version', '' );
+		if ( MEMBEXA_VERSION !== $installed ) {
+			DB::install();
+			update_option( 'membexa_version', MEMBEXA_VERSION );
+		}
+		if ( ! wp_next_scheduled( 'membexa_daily_maintenance' ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'membexa_daily_maintenance' );
+		}
+	}
+
 	public function public_assets() {
 		wp_register_style( 'membexa-public', MEMBEXA_URL . 'assets/css/public.css', array(), MEMBEXA_VERSION );
-		if ( is_singular() || has_shortcode( get_post_field( 'post_content', get_queried_object_id() ), 'membexa_pricing' ) || has_shortcode( get_post_field( 'post_content', get_queried_object_id() ), 'membexa_account' ) || has_shortcode( get_post_field( 'post_content', get_queried_object_id() ), 'membexa_register' ) ) {
+		$content = is_singular() ? (string) get_post_field( 'post_content', get_queried_object_id() ) : '';
+		if ( is_singular() || has_shortcode( $content, 'membexa_pricing' ) || has_shortcode( $content, 'membexa_account' ) || has_shortcode( $content, 'membexa_register' ) || has_shortcode( $content, 'membexa_login' ) ) {
 			wp_enqueue_style( 'membexa-public' );
 		}
 	}
