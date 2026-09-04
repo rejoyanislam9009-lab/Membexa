@@ -40,6 +40,7 @@ require_once MEMBEXA_DIR . 'includes/class-access.php';
 require_once MEMBEXA_DIR . 'includes/class-commerce.php';
 require_once MEMBEXA_DIR . 'includes/class-shortcodes.php';
 require_once MEMBEXA_DIR . 'includes/class-admin.php';
+require_once MEMBEXA_DIR . 'includes/class-integrations-admin.php';
 require_once MEMBEXA_DIR . 'includes/class-help.php';
 require_once MEMBEXA_DIR . 'includes/class-privacy.php';
 require_once MEMBEXA_DIR . 'includes/class-plugin.php';
