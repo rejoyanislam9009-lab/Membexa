@@ -11,18 +11,61 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Registers, sanitizes, and reads Membexa settings.
+ */
 final class Settings {
+	/**
+	 * Register settings hooks.
+	 *
+	 * @return void
+	 */
 	public function hooks() {
 		add_action( 'admin_init', array( $this, 'register' ) );
 	}
 
+	/**
+	 * Register settings with the WordPress Settings API.
+	 *
+	 * @return void
+	 */
 	public function register() {
-		register_setting( 'membexa_general_group', 'membexa_general', array( 'sanitize_callback' => array( $this, 'sanitize_general' ) ) );
-		register_setting( 'membexa_payments_group', 'membexa_payments', array( 'sanitize_callback' => array( $this, 'sanitize_payments' ) ) );
-		register_setting( 'membexa_emails_group', 'membexa_emails', array( 'sanitize_callback' => array( $this, 'sanitize_emails' ) ) );
-		register_setting( 'membexa_data_group', 'membexa_data', array( 'sanitize_callback' => array( $this, 'sanitize_data' ) ) );
+		register_setting(
+			'membexa_general_group',
+			'membexa_general',
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_general' ),
+			)
+		);
+		register_setting(
+			'membexa_payments_group',
+			'membexa_payments',
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_payments' ),
+			)
+		);
+		register_setting(
+			'membexa_emails_group',
+			'membexa_emails',
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_emails' ),
+			)
+		);
+		register_setting(
+			'membexa_data_group',
+			'membexa_data',
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_data' ),
+			)
+		);
 	}
 
+	/**
+	 * Sanitize general settings.
+	 *
+	 * @param mixed $input Submitted settings.
+	 * @return array
+	 */
 	public function sanitize_general( $input ) {
 		$input    = is_array( $input ) ? $input : array();
 		$currency = isset( $input['default_currency'] ) ? strtoupper( sanitize_text_field( wp_unslash( $input['default_currency'] ) ) ) : 'USD';
@@ -38,6 +81,12 @@ final class Settings {
 		);
 	}
 
+	/**
+	 * Sanitize payment settings.
+	 *
+	 * @param mixed $input Submitted settings.
+	 * @return array
+	 */
 	public function sanitize_payments( $input ) {
 		$input = is_array( $input ) ? $input : array();
 		return array(
@@ -47,6 +96,12 @@ final class Settings {
 		);
 	}
 
+	/**
+	 * Sanitize email settings.
+	 *
+	 * @param mixed $input Submitted settings.
+	 * @return array
+	 */
 	public function sanitize_emails( $input ) {
 		$input = is_array( $input ) ? $input : array();
 		return array(
@@ -57,11 +112,24 @@ final class Settings {
 		);
 	}
 
+	/**
+	 * Sanitize data-retention settings.
+	 *
+	 * @param mixed $input Submitted settings.
+	 * @return array
+	 */
 	public function sanitize_data( $input ) {
 		$input = is_array( $input ) ? $input : array();
-		return array( 'delete_on_uninstall' => empty( $input['delete_on_uninstall'] ) ? 0 : 1 );
+		return array(
+			'delete_on_uninstall' => empty( $input['delete_on_uninstall'] ) ? 0 : 1,
+		);
 	}
 
+	/**
+	 * Get general settings with defaults.
+	 *
+	 * @return array
+	 */
 	public static function general() {
 		return wp_parse_args(
 			get_option( 'membexa_general', array() ),
@@ -74,6 +142,11 @@ final class Settings {
 		);
 	}
 
+	/**
+	 * Get payment settings with defaults.
+	 *
+	 * @return array
+	 */
 	public static function payments() {
 		return wp_parse_args(
 			get_option( 'membexa_payments', array() ),
@@ -85,6 +158,11 @@ final class Settings {
 		);
 	}
 
+	/**
+	 * Get email settings with defaults.
+	 *
+	 * @return array
+	 */
 	public static function emails() {
 		return wp_parse_args(
 			get_option( 'membexa_emails', array() ),
@@ -97,10 +175,25 @@ final class Settings {
 		);
 	}
 
+	/**
+	 * Get data-retention settings with defaults.
+	 *
+	 * @return array
+	 */
 	public static function data() {
-		return wp_parse_args( get_option( 'membexa_data', array() ), array( 'delete_on_uninstall' => 0 ) );
+		return wp_parse_args(
+			get_option( 'membexa_data', array() ),
+			array(
+				'delete_on_uninstall' => 0,
+			)
+		);
 	}
 
+	/**
+	 * Get the Stripe secret key, preferring wp-config.php.
+	 *
+	 * @return string
+	 */
 	public static function stripe_secret_key() {
 		if ( defined( 'MEMBEXA_STRIPE_SECRET_KEY' ) && MEMBEXA_STRIPE_SECRET_KEY ) {
 			return (string) MEMBEXA_STRIPE_SECRET_KEY;
@@ -109,6 +202,11 @@ final class Settings {
 		return (string) $settings['stripe_secret_key'];
 	}
 
+	/**
+	 * Get the Stripe webhook signing secret, preferring wp-config.php.
+	 *
+	 * @return string
+	 */
 	public static function stripe_webhook_secret() {
 		if ( defined( 'MEMBEXA_STRIPE_WEBHOOK_SECRET' ) && MEMBEXA_STRIPE_WEBHOOK_SECRET ) {
 			return (string) MEMBEXA_STRIPE_WEBHOOK_SECRET;
