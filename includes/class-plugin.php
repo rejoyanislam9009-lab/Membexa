@@ -34,9 +34,7 @@ final class Plugin {
 		return self::$instance;
 	}
 
-	/**
-	 * Prevent direct construction.
-	 */
+	/** Prevent direct construction. */
 	private function __construct() {
 	}
 
@@ -52,6 +50,8 @@ final class Plugin {
 		( new Plan() )->hooks();
 		( new Subscriptions() )->hooks();
 		( new Stripe() )->hooks();
+		( new PayPal() )->hooks();
+		( new Bkash() )->hooks();
 		( new Access() )->hooks();
 		( new Shortcodes() )->hooks();
 		( new Privacy() )->hooks();
@@ -63,11 +63,7 @@ final class Plugin {
 		add_action( 'wp_enqueue_scripts', array( $this, 'public_assets' ) );
 	}
 
-	/**
-	 * Apply schema upgrades and ensure scheduled maintenance exists.
-	 *
-	 * @return void
-	 */
+	/** Apply schema upgrades and ensure scheduled maintenance exists. */
 	private function maybe_upgrade() {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
@@ -80,11 +76,7 @@ final class Plugin {
 		}
 	}
 
-	/**
-	 * Load the small public stylesheet on standard content views.
-	 *
-	 * @return void
-	 */
+	/** Load the small public stylesheet on standard content views. */
 	public function public_assets() {
 		wp_register_style( 'membexa-public', MEMBEXA_URL . 'assets/css/public.css', array(), MEMBEXA_VERSION );
 		if ( is_singular() || is_home() || is_archive() || is_search() || is_feed() ) {
