@@ -128,6 +128,9 @@ final class Gateways {
 		}
 
 		$plan = Plan::get( $subscription->plan_id );
+		if ( 'woocommerce_subscription' === $subscription->gateway ) {
+			return Commerce::cancel_woocommerce_subscription( $subscription );
+		}
 		if ( 'stripe' === $subscription->gateway && $plan && self::is_recurring( $plan['billing'] ) ) {
 			$result = Stripe::cancel_at_period_end( $subscription );
 			return is_wp_error( $result ) ? $result : 'scheduled';
