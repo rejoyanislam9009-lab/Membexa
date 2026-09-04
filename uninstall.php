@@ -9,23 +9,21 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-$data = get_option( 'membexa_data', array() );
-if ( empty( $data['delete_on_uninstall'] ) ) {
+$membexa_data = get_option( 'membexa_data', array() );
+if ( empty( $membexa_data['delete_on_uninstall'] ) ) {
 	return;
 }
 
 global $wpdb;
+$membexa_subscriptions = $wpdb->prefix . 'membexa_subscriptions';
+$membexa_transactions  = $wpdb->prefix . 'membexa_transactions';
 
-$subscriptions = $wpdb->prefix . 'membexa_subscriptions';
-$transactions  = $wpdb->prefix . 'membexa_transactions';
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Tables are created by Membexa and the names use the trusted WordPress table prefix.
+$wpdb->query( "DROP TABLE IF EXISTS {$membexa_subscriptions}" );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Tables are created by Membexa and the names use the trusted WordPress table prefix.
+$wpdb->query( "DROP TABLE IF EXISTS {$membexa_transactions}" );
 
-// These plugin-owned tables are intentionally removed only after the administrator opts in to uninstall cleanup.
-// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-$wpdb->query( "DROP TABLE IF EXISTS {$subscriptions}" );
-$wpdb->query( "DROP TABLE IF EXISTS {$transactions}" );
-// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-$plan_ids = get_posts(
+$membexa_plan_ids = get_posts(
 	array(
 		'post_type'      => 'membexa_plan',
 		'post_status'    => 'any',
@@ -33,8 +31,8 @@ $plan_ids = get_posts(
 		'posts_per_page' => -1,
 	)
 );
-foreach ( $plan_ids as $plan_id ) {
-	wp_delete_post( $plan_id, true );
+foreach ( $membexa_plan_ids as $membexa_plan_id ) {
+	wp_delete_post( $membexa_plan_id, true );
 }
 
 delete_post_meta_by_key( '_membexa_restricted' );
