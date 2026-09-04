@@ -4,7 +4,7 @@ Tags: membership, subscriptions, stripe, paypal, bkash
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,7 @@ Membexa is a WordPress-native membership and subscription solution. It uses Word
 * Per-post, per-page, and public-post-type content restrictions by membership plan.
 * Stripe-hosted Checkout for one-time and recurring plans.
 * PayPal hosted checkout for one-time/lifetime payments and PayPal Subscriptions for monthly/yearly plans.
+* PayPal connection verification with a visible Connected / needs-attention status in Payments settings.
 * bKash Tokenized Checkout for Bangladesh BDT one-time and lifetime plans.
 * Official provider setup links directly inside the Membexa Payments screen.
 * PayPal Setup Assistant with standard setup guidance and a partner-ready automatic onboarding entry point.
@@ -80,7 +81,9 @@ For one-time or lifetime payments, Membexa sends the order amount, currency, loc
 
 For monthly or yearly memberships, Membexa sends the configured PayPal Plan ID, member email address, local subscription identifier, and return/cancel URLs to PayPal Subscriptions. Verified PayPal webhooks are used to process activation, updates, payment failures, cancellation, expiration, and successful recurring payments. PayPal webhook signatures are verified through PayPal's verification API using the configured Webhook ID.
 
-Membexa 1.4.0 includes a PayPal Setup Assistant. Standard setup opens the official PayPal Developer Dashboard so the administrator can create or select a REST app and enter the Client ID, Client Secret, and Webhook ID in Membexa.
+Membexa includes a PayPal Setup Assistant. Standard setup opens the official PayPal Developer Dashboard so the administrator can create or select a REST app and enter the Client ID, Client Secret, and Webhook ID in Membexa.
+
+Membexa 1.4.1 adds an explicit Verify PayPal Connection action. The check authenticates to the selected PayPal Sandbox or Live REST API using the saved application credentials, retrieves the saved webhook configuration from PayPal, confirms that its URL matches this WordPress site's Membexa PayPal endpoint, and verifies that all webhook events required by Membexa are subscribed. The resulting status is stored without storing OAuth access tokens and is invalidated automatically when the effective PayPal credentials, Webhook ID, or Sandbox/Live mode changes.
 
 PayPal also documents an approved Partner Referrals / software-onboarding flow that can share a consenting seller's REST API credentials with downloadable ecommerce software after PayPal login and approval. Membexa does not ship a PayPal partner secret inside the plugin. Automatic partner onboarding is shown only when the distributor/site owner has separately configured an approved secure partner onboarding URL through `MEMBEXA_PAYPAL_PARTNER_CONNECT_URL` or the `membexa_paypal_partner_connect_url` filter. Without that approved partner setup, Membexa safely uses the standard Developer Dashboard flow and does not scrape or infer credentials from a PayPal login session.
 
@@ -148,7 +151,8 @@ For production sites, Stripe secrets can be defined in `wp-config.php` using `ME
 6. For monthly or yearly memberships, create the recurring product/plan in PayPal and place its `P-...` Plan ID in the Membexa plan.
 7. Create a PayPal webhook using the displayed Membexa PayPal webhook URL.
 8. Subscribe the webhook to `BILLING.SUBSCRIPTION.ACTIVATED`, `BILLING.SUBSCRIPTION.UPDATED`, `BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.EXPIRED`, `BILLING.SUBSCRIPTION.SUSPENDED`, `BILLING.SUBSCRIPTION.PAYMENT.FAILED`, and `PAYMENT.SALE.COMPLETED`.
-9. Copy the PayPal Webhook ID into Membexa > Settings > Payments so incoming events can be verified.
+9. Copy the PayPal Webhook ID into Membexa > Settings > Payments and save the settings.
+10. Click Verify PayPal Connection. A green Connected status means the REST credentials, Webhook ID, webhook URL, and required event subscriptions all passed server-side verification.
 
 Production credentials can be defined in `wp-config.php` with `MEMBEXA_PAYPAL_CLIENT_ID`, `MEMBEXA_PAYPAL_CLIENT_SECRET`, and `MEMBEXA_PAYPAL_WEBHOOK_ID`.
 
@@ -169,11 +173,15 @@ Production bKash credentials can be stored in `wp-config.php` as `MEMBEXA_BKASH_
 
 = Do I still have to create shortcode pages manually? =
 
-No. Version 1.4.0 creates missing Pricing, Join, Login, and Account pages automatically and links them to the correct settings. The shortcodes remain available if you want custom pages.
+No. Version 1.4.0 and later create missing Pricing, Join, Login, and Account pages automatically and link them to the correct settings. The shortcodes remain available if you want custom pages.
 
 = What does Create / Repair Membexa Pages do? =
 
 It creates missing Membexa system pages, reconnects the matching settings, and repairs a missing shortcode only on pages that Membexa itself created. It does not overwrite an existing page selected by the administrator.
+
+= How do I know whether PayPal is really connected? =
+
+Save the PayPal Client ID, Client Secret, Webhook ID, and correct Sandbox/Live mode, then click Verify PayPal Connection in Membexa > Settings > Payments. Membexa displays Connected only after PayPal accepts the REST credentials and returns a webhook whose ID, URL, and required event subscriptions match the current Membexa configuration. If settings change later, the previous status becomes Needs verification automatically.
 
 = Can Membexa automatically read my PayPal credentials after I log in? =
 
@@ -189,7 +197,7 @@ Yes. A free plan activates immediately after registration or selection and requi
 
 = Which payment methods are included? =
 
-Version 1.4.0 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
+Version 1.4.1 includes Stripe, PayPal, and bKash. Only gateways that are enabled, configured, and compatible with a plan are offered at checkout.
 
 = Does PayPal support recurring memberships? =
 
@@ -197,7 +205,7 @@ Yes. Monthly and yearly Membexa plans can use PayPal Subscriptions when the plan
 
 = Does bKash support recurring memberships in Membexa? =
 
-Not in version 1.4.0. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
+Not in version 1.4.1. bKash is intentionally limited to BDT one-time and lifetime memberships so Membexa does not simulate or assume unsupported recurring billing behavior.
 
 = Does Membexa replace WooCommerce? =
 
@@ -218,6 +226,15 @@ Membexa stores WordPress user IDs, membership plan IDs, subscription status, pay
 When a payment gateway is configured and selected by a member, payment-related data described in the relevant External service section above is sent to that third-party provider. Site owners are responsible for disclosing their selected payment providers, legal basis, and retention practices in their own privacy policy.
 
 == Changelog ==
+
+= 1.4.1 =
+* Added a Verify PayPal Connection action to the Payments settings screen.
+* Added visible Connected, needs-verification, connection-failed, and webhook-attention states.
+* PayPal verification authenticates against the selected Sandbox/Live API before reporting a successful connection.
+* Added server-side Webhook ID and webhook URL verification through the PayPal Webhooks API.
+* Added verification of all seven PayPal webhook events required by Membexa.
+* Connection state is invalidated automatically when effective PayPal credentials, Webhook ID, or Sandbox/Live mode changes.
+* No PayPal OAuth access token is persisted by the connection-status feature.
 
 = 1.4.0 =
 * Added automatic creation and assignment of Pricing, Join, Login, and Account pages.
