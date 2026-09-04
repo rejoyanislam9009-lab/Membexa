@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="Membexa">
-	<description>WordPress Coding Standards for Membexa.</description>
+	<description>WordPress coding and compatibility standards for Membexa.</description>
 	<file>membexa.php</file>
 	<file>includes</file>
 	<file>uninstall.php</file>
@@ -8,8 +8,11 @@
 	<arg value="sp"/>
 	<arg name="extensions" value="php"/>
 	<config name="minimum_supported_wp_version" value="6.4"/>
-	<rule ref="WordPress"/>
+	<rule ref="WordPress-Core"/>
 	<rule ref="WordPress-Extra"/>
-	<rule ref="WordPress-Docs"/>
-	<rule ref="PHPCompatibilityWP"><properties><property name="testVersion" value="7.4-"/></properties></rule>
+	<rule ref="PHPCompatibilityWP">
+		<properties>
+			<property name="testVersion" value="7.4-"/>
+		</properties>
+	</rule>
 </ruleset>
