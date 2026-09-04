@@ -85,7 +85,11 @@ final class Payment_Addons_Admin {
 							<td><strong><?php echo esc_html( $gateway['label'] ); ?></strong></td>
 							<td><?php echo esc_html( $gateway['addon_version'] ? sprintf( 'v%s', $gateway['addon_version'] ) : __( 'Active', 'membexa' ) ); ?></td>
 							<td><?php echo esc_html( $enabled ? __( 'Configured', 'membexa' ) : __( 'Needs setup', 'membexa' ) ); ?></td>
-							<td><?php if ( ! empty( $gateway['settings_url'] ) ) : ?><a class="button button-secondary" href="<?php echo esc_url( $gateway['settings_url'] ); ?>"><?php esc_html_e( 'Open settings', 'membexa' ); ?></a><?php endif; ?></td>
+							<td>
+								<?php if ( ! empty( $gateway['settings_url'] ) ) : ?>
+									<a class="button button-secondary" href="<?php echo esc_url( $gateway['settings_url'] ); ?>"><?php esc_html_e( 'Open settings', 'membexa' ); ?></a>
+								<?php endif; ?>
+							</td>
 						</tr>
 					<?php endforeach; ?>
 					</tbody>
