@@ -119,15 +119,15 @@ jobs:
           rsync -a addons/membexa-paypal/ build/membexa-paypal/
           rsync -a addons/membexa-bkash/ build/membexa-bkash/
           cd build
-          zip -r membexa-1.6.0.zip membexa
+          zip -r membexa-1.6.1.zip membexa
           zip -r membexa-stripe-1.0.0.zip membexa-stripe
           zip -r membexa-paypal-1.0.0.zip membexa-paypal
           zip -r membexa-bkash-1.0.0.zip membexa-bkash
       - name: Upload Membexa Core
         uses: actions/upload-artifact@v4
         with:
-          name: membexa-1.6.0
-          path: build/membexa-1.6.0.zip
+          name: membexa-1.6.1
+          path: build/membexa-1.6.1.zip
           if-no-files-found: error
           compression-level: 0
       - name: Upload Stripe add-on
