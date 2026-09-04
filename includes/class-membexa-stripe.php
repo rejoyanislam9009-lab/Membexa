@@ -91,12 +91,7 @@ final class Stripe {
 			return new WP_Error( 'membexa_stripe_url', __( 'Stripe returned an unexpected Checkout URL.', 'membexa' ) );
 		}
 
-		global $wpdb;
-		$wpdb->update(
-			DB::subscriptions_table(),
-			array( 'gateway_external_id' => sanitize_text_field( $response['id'] ), 'updated_at' => current_time( 'mysql', true ) ),
-			array( 'id' => $subscription_id )
-		);
+		self::set_external_id( $subscription_id, $response['id'] );
 		return esc_url_raw( $response['url'] );
 	}
 
@@ -158,6 +153,12 @@ final class Stripe {
 			case 'checkout.session.completed':
 				$this->handle_checkout_completed( $object );
 				break;
+			case 'checkout.session.async_payment_succeeded':
+				$this->handle_async_checkout( $object, true );
+				break;
+			case 'checkout.session.async_payment_failed':
+				$this->handle_async_checkout( $object, false );
+				break;
 			case 'customer.subscription.updated':
 				$this->handle_subscription_updated( $object );
 				break;
@@ -166,10 +167,11 @@ final class Stripe {
 					Subscriptions::update_status_by_external_id( $object['id'], 'canceled' );
 				}
 				break;
+			case 'invoice.paid':
+				$this->handle_invoice( $object, true );
+				break;
 			case 'invoice.payment_failed':
-				if ( ! empty( $object['subscription'] ) ) {
-					Subscriptions::update_status_by_external_id( $object['subscription'], 'past_due' );
-				}
+				$this->handle_invoice( $object, false );
 				break;
 		}
 		set_transient( $event_key, 1, DAY_IN_SECONDS );
@@ -177,12 +179,22 @@ final class Stripe {
 	}
 
 	private function handle_checkout_completed( $session ) {
-		$metadata              = isset( $session['metadata'] ) && is_array( $session['metadata'] ) ? $session['metadata'] : array();
-		$local_subscription_id = isset( $metadata['local_subscription_id'] ) ? absint( $metadata['local_subscription_id'] ) : 0;
+		$local_subscription_id = $this->local_subscription_id( $session );
 		if ( ! $local_subscription_id ) {
 			return;
 		}
+
 		$external_id = ! empty( $session['subscription'] ) ? $session['subscription'] : ( ! empty( $session['payment_intent'] ) ? $session['payment_intent'] : $session['id'] );
+		if ( $external_id ) {
+			self::set_external_id( $local_subscription_id, $external_id );
+		}
+
+		$payment_status = isset( $session['payment_status'] ) ? sanitize_key( $session['payment_status'] ) : '';
+		$is_paid        = in_array( $payment_status, array( 'paid', 'no_payment_required' ), true );
+		if ( ! $is_paid ) {
+			return;
+		}
+
 		Subscriptions::activate( $local_subscription_id, $external_id );
 		$subscription = Subscriptions::get( $local_subscription_id );
 		Subscriptions::log_transaction(
@@ -191,9 +203,36 @@ final class Stripe {
 				'subscription_id' => $local_subscription_id,
 				'gateway'         => 'stripe',
 				'external_id'     => ! empty( $session['payment_intent'] ) ? $session['payment_intent'] : $session['id'],
+				'type'            => 'checkout',
 				'amount'          => isset( $session['amount_total'] ) ? ( (float) $session['amount_total'] / 100 ) : 0,
 				'currency'        => isset( $session['currency'] ) ? $session['currency'] : '',
-				'status'          => isset( $session['payment_status'] ) ? $session['payment_status'] : 'complete',
+				'status'          => $payment_status,
+			)
+		);
+	}
+
+	private function handle_async_checkout( $session, $succeeded ) {
+		$local_subscription_id = $this->local_subscription_id( $session );
+		if ( ! $local_subscription_id ) {
+			return;
+		}
+		$external_id = ! empty( $session['payment_intent'] ) ? $session['payment_intent'] : ( ! empty( $session['id'] ) ? $session['id'] : '' );
+		$subscription = Subscriptions::get( $local_subscription_id );
+		if ( $succeeded ) {
+			Subscriptions::activate( $local_subscription_id, $external_id );
+		} else {
+			Subscriptions::cancel_local( $local_subscription_id );
+		}
+		Subscriptions::log_transaction(
+			array(
+				'user_id'         => $subscription ? $subscription->user_id : 0,
+				'subscription_id' => $local_subscription_id,
+				'gateway'         => 'stripe',
+				'external_id'     => $external_id,
+				'type'            => $succeeded ? 'async_payment' : 'async_payment_failed',
+				'amount'          => isset( $session['amount_total'] ) ? ( (float) $session['amount_total'] / 100 ) : 0,
+				'currency'        => isset( $session['currency'] ) ? $session['currency'] : '',
+				'status'          => $succeeded ? 'paid' : 'failed',
 			)
 		);
 	}
@@ -216,6 +255,57 @@ final class Stripe {
 			$status,
 			isset( $subscription['current_period_end'] ) ? absint( $subscription['current_period_end'] ) : null,
 			! empty( $subscription['cancel_at_period_end'] )
+		);
+	}
+
+	private function handle_invoice( $invoice, $paid ) {
+		$external_subscription_id = $this->invoice_subscription_id( $invoice );
+		if ( ! $external_subscription_id ) {
+			return;
+		}
+		$subscription = Subscriptions::get_by_external_id( $external_subscription_id );
+		if ( ! $subscription ) {
+			return;
+		}
+		Subscriptions::update_status_by_external_id( $external_subscription_id, $paid ? 'active' : 'past_due' );
+		Subscriptions::log_transaction(
+			array(
+				'user_id'         => $subscription->user_id,
+				'subscription_id' => $subscription->id,
+				'gateway'         => 'stripe',
+				'external_id'     => isset( $invoice['id'] ) ? $invoice['id'] : '',
+				'type'            => $paid ? 'invoice_paid' : 'invoice_failed',
+				'amount'          => isset( $invoice[ $paid ? 'amount_paid' : 'amount_due' ] ) ? ( (float) $invoice[ $paid ? 'amount_paid' : 'amount_due' ] / 100 ) : 0,
+				'currency'        => isset( $invoice['currency'] ) ? $invoice['currency'] : '',
+				'status'          => $paid ? 'paid' : 'failed',
+			)
+		);
+	}
+
+	private function local_subscription_id( $session ) {
+		$metadata = isset( $session['metadata'] ) && is_array( $session['metadata'] ) ? $session['metadata'] : array();
+		return isset( $metadata['local_subscription_id'] ) ? absint( $metadata['local_subscription_id'] ) : 0;
+	}
+
+	private function invoice_subscription_id( $invoice ) {
+		if ( ! empty( $invoice['subscription'] ) && is_string( $invoice['subscription'] ) ) {
+			return sanitize_text_field( $invoice['subscription'] );
+		}
+		if ( ! empty( $invoice['parent']['subscription_details']['subscription'] ) && is_string( $invoice['parent']['subscription_details']['subscription'] ) ) {
+			return sanitize_text_field( $invoice['parent']['subscription_details']['subscription'] );
+		}
+		return '';
+	}
+
+	private static function set_external_id( $subscription_id, $external_id ) {
+		global $wpdb;
+		return false !== $wpdb->update(
+			DB::subscriptions_table(),
+			array(
+				'gateway_external_id' => sanitize_text_field( $external_id ),
+				'updated_at'          => current_time( 'mysql', true ),
+			),
+			array( 'id' => absint( $subscription_id ) )
 		);
 	}
 
