@@ -39,9 +39,28 @@ jobs:
           slug: 'membexa'
           ignore-warnings: true
 
+  woocommerce-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install wp-env
+        run: npm install -g @wordpress/env
+      - name: Start WordPress and activate WooCommerce
+        run: |
+          PLUGIN_DIR="$(pwd)"
+          printf '{"core":null,"port":8890,"testsEnvironment":false,"mappings":{"wp-content/plugins/membexa":"%s"}}\n' "$PLUGIN_DIR" > .wp-env.json
+          wp-env start --update
+          wp-env run cli wp plugin install woocommerce --activate
+          wp-env run cli wp plugin activate membexa
+      - name: Run WooCommerce membership smoke test
+        run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/woocommerce-smoke.php
+
   package:
     runs-on: ubuntu-latest
-    needs: [quality, plugin-check]
+    needs: [quality, plugin-check, woocommerce-smoke]
     steps:
       - uses: actions/checkout@v4
       - name: Build installable plugin ZIP
@@ -49,11 +68,11 @@ jobs:
           mkdir -p build/membexa
           rsync -a ./ build/membexa/ --exclude-from='.distignore'
           cd build
-          zip -r membexa-1.2.0.zip membexa
+          zip -r membexa-1.3.0.zip membexa
       - name: Upload installable ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: membexa-1.2.0
-          path: build/membexa-1.2.0.zip
+          name: membexa-1.3.0
+          path: build/membexa-1.3.0.zip
           if-no-files-found: error
           compression-level: 0
