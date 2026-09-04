@@ -11,22 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Coordinates Membexa services and hooks.
- */
+/** Coordinates Membexa services and hooks. */
 final class Plugin {
-	/**
-	 * Singleton instance.
-	 *
-	 * @var Plugin|null
-	 */
+	/** @var Plugin|null */
 	private static $instance;
 
-	/**
-	 * Get the plugin singleton.
-	 *
-	 * @return Plugin
-	 */
+	/** Get the plugin singleton. */
 	public static function instance() {
 		if ( ! self::$instance ) {
 			self::$instance = new self();
@@ -35,14 +25,9 @@ final class Plugin {
 	}
 
 	/** Prevent direct construction. */
-	private function __construct() {
-	}
+	private function __construct() {}
 
-	/**
-	 * Bootstrap plugin services.
-	 *
-	 * @return void
-	 */
+	/** Bootstrap plugin services. */
 	public function run() {
 		$this->maybe_upgrade();
 
@@ -61,6 +46,7 @@ final class Plugin {
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
+			( new Setup() )->hooks();
 			( new Integrations_Admin() )->hooks();
 			( new Help() )->hooks();
 		}
@@ -68,11 +54,12 @@ final class Plugin {
 		add_action( 'wp_enqueue_scripts', array( $this, 'public_assets' ) );
 	}
 
-	/** Apply schema upgrades and ensure scheduled maintenance exists. */
+	/** Apply schema upgrades, provision pages, and ensure maintenance exists. */
 	private function maybe_upgrade() {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
+			Pages::ensure();
 			update_option( 'membexa_flush_rewrite_rules', 1, false );
 			update_option( 'membexa_version', MEMBEXA_VERSION );
 		}
