@@ -11,9 +11,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinates Membexa services and hooks.
+ */
 final class Plugin {
+	/**
+	 * Singleton instance.
+	 *
+	 * @var Plugin|null
+	 */
 	private static $instance;
 
+	/**
+	 * Get the plugin singleton.
+	 *
+	 * @return Plugin
+	 */
 	public static function instance() {
 		if ( ! self::$instance ) {
 			self::$instance = new self();
@@ -21,8 +34,17 @@ final class Plugin {
 		return self::$instance;
 	}
 
-	private function __construct() {}
+	/**
+	 * Prevent direct construction.
+	 */
+	private function __construct() {
+	}
 
+	/**
+	 * Bootstrap plugin services.
+	 *
+	 * @return void
+	 */
 	public function run() {
 		$this->maybe_upgrade();
 
@@ -41,21 +63,31 @@ final class Plugin {
 		add_action( 'wp_enqueue_scripts', array( $this, 'public_assets' ) );
 	}
 
+	/**
+	 * Apply schema upgrades and ensure scheduled maintenance exists.
+	 *
+	 * @return void
+	 */
 	private function maybe_upgrade() {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
 			update_option( 'membexa_version', MEMBEXA_VERSION );
 		}
+
 		if ( ! wp_next_scheduled( 'membexa_daily_maintenance' ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'membexa_daily_maintenance' );
 		}
 	}
 
+	/**
+	 * Load the small public stylesheet on standard content views.
+	 *
+	 * @return void
+	 */
 	public function public_assets() {
 		wp_register_style( 'membexa-public', MEMBEXA_URL . 'assets/css/public.css', array(), MEMBEXA_VERSION );
-		$content = is_singular() ? (string) get_post_field( 'post_content', get_queried_object_id() ) : '';
-		if ( is_singular() || has_shortcode( $content, 'membexa_pricing' ) || has_shortcode( $content, 'membexa_account' ) || has_shortcode( $content, 'membexa_register' ) || has_shortcode( $content, 'membexa_login' ) ) {
+		if ( is_singular() || is_home() || is_archive() || is_search() || is_feed() ) {
 			wp_enqueue_style( 'membexa-public' );
 		}
 	}
