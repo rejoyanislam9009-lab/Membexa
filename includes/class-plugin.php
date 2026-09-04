@@ -47,12 +47,14 @@ final class Plugin {
 		$this->maybe_upgrade();
 
 		( new Settings() )->hooks();
+		( new Account() )->hooks();
 		( new Plan() )->hooks();
 		( new Subscriptions() )->hooks();
 		( new Stripe() )->hooks();
 		( new PayPal() )->hooks();
 		( new Bkash() )->hooks();
 		( new Access() )->hooks();
+		( new Commerce() )->hooks();
 		( new Shortcodes() )->hooks();
 		( new Privacy() )->hooks();
 
@@ -69,6 +71,8 @@ final class Plugin {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
+			Account::register_endpoint();
+			flush_rewrite_rules( false );
 			update_option( 'membexa_version', MEMBEXA_VERSION );
 		}
 
