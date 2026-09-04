@@ -354,9 +354,18 @@ final class Payment_Hub_Admin {
 	/** Build known Membexa add-on rows. */
 	private function membexa_addon_rows( $plugins ) {
 		$catalog = array(
-			'membexa-stripe/membexa-stripe.php' => array( 'gateway' => 'stripe', 'label' => __( 'Membexa Stripe Gateway', 'membexa' ) ),
-			'membexa-paypal/membexa-paypal.php' => array( 'gateway' => 'paypal', 'label' => __( 'Membexa PayPal Gateway', 'membexa' ) ),
-			'membexa-bkash/membexa-bkash.php'   => array( 'gateway' => 'bkash', 'label' => __( 'Membexa bKash Gateway', 'membexa' ) ),
+			'membexa-stripe/membexa-stripe.php' => array(
+				'gateway' => 'stripe',
+				'label'   => __( 'Membexa Stripe Gateway', 'membexa' ),
+			),
+			'membexa-paypal/membexa-paypal.php' => array(
+				'gateway' => 'paypal',
+				'label'   => __( 'Membexa PayPal Gateway', 'membexa' ),
+			),
+			'membexa-bkash/membexa-bkash.php' => array(
+				'gateway' => 'bkash',
+				'label'   => __( 'Membexa bKash Gateway', 'membexa' ),
+			),
 		);
 		$rows = array();
 
