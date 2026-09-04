@@ -31,6 +31,18 @@ Membexa is a membership and subscription plugin designed to feel at home inside 
 
 Membexa does not process or store card numbers. When Stripe is enabled, payment details are entered on Stripe-hosted Checkout pages. Stripe availability, supported countries, currencies, taxes, and fees are governed by your Stripe account and Stripe's terms.
 
+= External service: Stripe =
+
+Membexa can optionally connect to Stripe when the site administrator enables Stripe under Membexa > Settings > Payments and supplies Stripe credentials. A Stripe account is required only for paid Stripe plans; free memberships work without Stripe.
+
+When a member starts a paid checkout, Membexa sends the member's email address, the selected Stripe Price ID, the local WordPress user ID, the local membership plan ID, the local subscription record ID, and success/cancel return URLs to Stripe to create a hosted Checkout Session. Stripe then processes the payment on its own hosted Checkout page. Membexa receives signed webhook events from Stripe containing payment and subscription status information needed to activate, update, or cancel local membership access.
+
+* Stripe service: https://stripe.com/
+* Stripe legal / Services Agreement: https://stripe.com/legal
+* Stripe Privacy Policy: https://stripe.com/privacy
+
+Stripe is a third-party service and is not operated by the Membexa plugin author. Site owners are responsible for configuring Stripe and for ensuring their own use of Stripe is appropriate for their jurisdiction and business.
+
 == Installation ==
 
 1. Upload the `membexa` folder to `/wp-content/plugins/` or install the plugin ZIP from Plugins > Add New > Upload Plugin.
@@ -78,7 +90,7 @@ Not by default. Enable permanent uninstall cleanup under Membexa > Settings > Pr
 
 Membexa stores WordPress user IDs, membership plan IDs, subscription status, payment gateway references, transaction amounts/currencies/status, and timestamps required to provide membership access. Membexa itself does not send telemetry or analytics to the plugin author.
 
-When Stripe is configured, checkout requests are sent to Stripe and subscription/payment status is received from Stripe through signed webhooks. Site owners are responsible for disclosing their payment provider and retention practices in their privacy policy.
+When Stripe is configured, checkout requests are sent to Stripe and subscription/payment status is received from Stripe through signed webhooks. Site owners are responsible for disclosing their payment provider and retention practices in their privacy policy. See the External service: Stripe section above for the service, legal, and privacy links.
 
 == Changelog ==
 
