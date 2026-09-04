@@ -54,4 +54,5 @@ delete_option( 'membexa_emails' );
 delete_option( 'membexa_data' );
 delete_option( 'membexa_integrations' );
 delete_option( 'membexa_version' );
+delete_option( 'membexa_flush_rewrite_rules' );
 wp_clear_scheduled_hook( 'membexa_daily_maintenance' );
