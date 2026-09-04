@@ -20,6 +20,7 @@ final class Account {
 	/** Register account hooks. */
 	public function hooks() {
 		add_action( 'init', array( __CLASS__, 'register_endpoint' ) );
+		add_action( 'init', array( $this, 'maybe_flush_rewrites' ), 99 );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'account_menu_items' ), 20 );
 		add_action( 'woocommerce_account_' . self::ENDPOINT . '_endpoint', array( $this, 'endpoint_content' ) );
 		add_action( 'activated_plugin', array( $this, 'maybe_refresh_rewrites' ) );
@@ -122,13 +123,20 @@ final class Account {
 		return self::woocommerce_active() && 'yes' === get_option( 'woocommerce_enable_myaccount_registration', 'no' );
 	}
 
-	/** Refresh endpoint rewrite rules when WooCommerce is activated or deactivated. */
+	/** Schedule endpoint rewrite refresh when WooCommerce is activated or deactivated. */
 	public function maybe_refresh_rewrites( $plugin ) {
-		if ( 'woocommerce/woocommerce.php' !== (string) $plugin ) {
+		if ( 'woocommerce/woocommerce.php' === (string) $plugin ) {
+			update_option( 'membexa_flush_rewrite_rules', 1, false );
+		}
+	}
+
+	/** Flush rewrites after init, when all plugin endpoints and translations are safely registered. */
+	public function maybe_flush_rewrites() {
+		if ( ! get_option( 'membexa_flush_rewrite_rules', false ) ) {
 			return;
 		}
-		self::register_endpoint();
 		flush_rewrite_rules( false );
+		delete_option( 'membexa_flush_rewrite_rules' );
 	}
 
 	/** Add a selected Membexa plan to the WooCommerce registration form. */
