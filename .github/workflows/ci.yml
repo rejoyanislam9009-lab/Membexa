@@ -39,6 +39,40 @@ jobs:
           slug: 'membexa'
           ignore-warnings: true
 
+  addon-plugin-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - slug: membexa-stripe
+            source: addons/membexa-stripe
+          - slug: membexa-paypal
+            source: addons/membexa-paypal
+          - slug: membexa-bkash
+            source: addons/membexa-bkash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install wp-env
+        run: npm install -g @wordpress/env
+      - name: Start WordPress with Membexa Core and add-on
+        run: |
+          ROOT_DIR="$(pwd)"
+          CORE_DIR="$ROOT_DIR/build/membexa"
+          ADDON_DIR="$ROOT_DIR/build/${{ matrix.slug }}"
+          mkdir -p "$CORE_DIR" "$ADDON_DIR"
+          rsync -a ./ "$CORE_DIR/" --exclude-from='.distignore'
+          rsync -a "${{ matrix.source }}/" "$ADDON_DIR/"
+          printf '{"core":null,"port":8892,"testsEnvironment":false,"mappings":{"wp-content/plugins/membexa":"%s","wp-content/plugins/${{ matrix.slug }}":"%s"}}\n' "$CORE_DIR" "$ADDON_DIR" > .wp-env.json
+          wp-env start --update
+          wp-env run cli wp plugin install plugin-check --activate
+          wp-env run cli wp plugin activate membexa
+          wp-env run cli wp plugin activate '${{ matrix.slug }}'
+      - name: Run official WordPress Plugin Check for add-on
+        run: wp-env run cli wp plugin check '${{ matrix.slug }}' --ignore-warnings --format=table --require=./wp-content/plugins/plugin-check/cli.php
+
   woocommerce-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -55,8 +89,9 @@ jobs:
           wp-env start --update
           wp-env run cli wp plugin install woocommerce --activate
           wp-env run cli wp plugin activate membexa
-      - name: Confirm core has no active built-in gateways
-        run: wp-env run cli wp eval 'if ( \Membexa\Gateways::all() ) { fwrite( STDERR, "Core unexpectedly registered a payment gateway.\n" ); exit( 1 ); } echo "Membexa Core has no active built-in payment gateways.\n";'
+      - name: Confirm core contains and loads no gateway implementation
+        run: |
+          wp-env run cli wp eval 'foreach ( array( "Stripe" => "class-stripe.php", "PayPal" => "class-paypal.php", "PayPal_Connection" => "class-paypal-connection.php", "Bkash" => "class-bkash.php" ) as $class => $file ) { $fqcn = "\\Membexa\\" . $class; if ( class_exists( $fqcn, false ) || file_exists( MEMBEXA_DIR . "includes/" . $file ) ) { fwrite( STDERR, "Core unexpectedly contains or loaded gateway implementation: {$class}\n" ); exit( 1 ); } } if ( \Membexa\Gateways::all() ) { fwrite( STDERR, "Core unexpectedly registered a payment gateway.\n" ); exit( 1 ); } echo "Membexa Core gateway isolation passed.\n";'
       - name: Activate modular payment add-ons
         run: wp-env run cli wp plugin activate membexa-stripe membexa-paypal membexa-bkash
       - name: Run modular payment add-on smoke test
@@ -70,7 +105,7 @@ jobs:
 
   package:
     runs-on: ubuntu-latest
-    needs: [quality, plugin-check, woocommerce-smoke]
+    needs: [quality, plugin-check, addon-plugin-check, woocommerce-smoke]
     steps:
       - uses: actions/checkout@v4
       - name: Build installable ZIPs

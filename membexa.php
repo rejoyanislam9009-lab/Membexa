@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Membexa – Membership & Subscriptions
- * Description:       Create membership plans, recurring subscriptions, gated content, member accounts, WooCommerce entitlements, and modular payment gateway integrations in WordPress.
+ * Description:       Create membership plans, subscriptions, gated content, member accounts, WooCommerce entitlements, and modular payment gateway integrations in WordPress.
  * Version:           1.5.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
@@ -32,10 +32,6 @@ require_once MEMBEXA_DIR . 'includes/class-account.php';
 require_once MEMBEXA_DIR . 'includes/class-plan.php';
 require_once MEMBEXA_DIR . 'includes/class-emails.php';
 require_once MEMBEXA_DIR . 'includes/class-subscriptions.php';
-require_once MEMBEXA_DIR . 'includes/class-stripe.php';
-require_once MEMBEXA_DIR . 'includes/class-paypal.php';
-require_once MEMBEXA_DIR . 'includes/class-paypal-connection.php';
-require_once MEMBEXA_DIR . 'includes/class-bkash.php';
 require_once MEMBEXA_DIR . 'includes/class-gateways.php';
 require_once MEMBEXA_DIR . 'includes/class-payment-addons-admin.php';
 require_once MEMBEXA_DIR . 'includes/class-access.php';
