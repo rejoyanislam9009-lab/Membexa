@@ -51,10 +51,16 @@ jobs:
       - name: Start WordPress and activate WooCommerce
         run: |
           PLUGIN_DIR="$(pwd)"
-          printf '{"core":null,"port":8890,"testsEnvironment":false,"mappings":{"wp-content/plugins/membexa":"%s"}}\n' "$PLUGIN_DIR" > .wp-env.json
+          printf '{"core":null,"port":8890,"testsEnvironment":false,"mappings":{"wp-content/plugins/membexa":"%s","wp-content/plugins/membexa-stripe":"%s/addons/membexa-stripe","wp-content/plugins/membexa-paypal":"%s/addons/membexa-paypal","wp-content/plugins/membexa-bkash":"%s/addons/membexa-bkash"}}\n' "$PLUGIN_DIR" "$PLUGIN_DIR" "$PLUGIN_DIR" "$PLUGIN_DIR" > .wp-env.json
           wp-env start --update
           wp-env run cli wp plugin install woocommerce --activate
           wp-env run cli wp plugin activate membexa
+      - name: Confirm core has no active built-in gateways
+        run: wp-env run cli wp eval 'if ( \Membexa\Gateways::all() ) { fwrite( STDERR, "Core unexpectedly registered a payment gateway.\n" ); exit( 1 ); } echo "Membexa Core has no active built-in payment gateways.\n";'
+      - name: Activate modular payment add-ons
+        run: wp-env run cli wp plugin activate membexa-stripe membexa-paypal membexa-bkash
+      - name: Run modular payment add-on smoke test
+        run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/payment-addons-smoke.php
       - name: Run automatic page setup smoke test
         run: wp-env run cli wp eval-file wp-content/plugins/membexa/.github/tests/setup-smoke.php
       - name: Run PayPal connection smoke tests
@@ -67,16 +73,44 @@ jobs:
     needs: [quality, plugin-check, woocommerce-smoke]
     steps:
       - uses: actions/checkout@v4
-      - name: Build installable plugin ZIP
+      - name: Build installable ZIPs
         run: |
           mkdir -p build/membexa
           rsync -a ./ build/membexa/ --exclude-from='.distignore'
+          mkdir -p build/membexa-stripe build/membexa-paypal build/membexa-bkash
+          rsync -a addons/membexa-stripe/ build/membexa-stripe/
+          rsync -a addons/membexa-paypal/ build/membexa-paypal/
+          rsync -a addons/membexa-bkash/ build/membexa-bkash/
           cd build
-          zip -r membexa-1.4.3.zip membexa
-      - name: Upload installable ZIP
+          zip -r membexa-1.5.0.zip membexa
+          zip -r membexa-stripe-1.0.0.zip membexa-stripe
+          zip -r membexa-paypal-1.0.0.zip membexa-paypal
+          zip -r membexa-bkash-1.0.0.zip membexa-bkash
+      - name: Upload Membexa Core
         uses: actions/upload-artifact@v4
         with:
-          name: membexa-1.4.3
-          path: build/membexa-1.4.3.zip
+          name: membexa-1.5.0
+          path: build/membexa-1.5.0.zip
+          if-no-files-found: error
+          compression-level: 0
+      - name: Upload Stripe add-on
+        uses: actions/upload-artifact@v4
+        with:
+          name: membexa-stripe-1.0.0
+          path: build/membexa-stripe-1.0.0.zip
+          if-no-files-found: error
+          compression-level: 0
+      - name: Upload PayPal add-on
+        uses: actions/upload-artifact@v4
+        with:
+          name: membexa-paypal-1.0.0
+          path: build/membexa-paypal-1.0.0.zip
+          if-no-files-found: error
+          compression-level: 0
+      - name: Upload bKash add-on
+        uses: actions/upload-artifact@v4
+        with:
+          name: membexa-bkash-1.0.0
+          path: build/membexa-bkash-1.0.0.zip
           if-no-files-found: error
           compression-level: 0
