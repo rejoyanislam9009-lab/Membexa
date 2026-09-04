@@ -136,7 +136,7 @@ final class PayPal_Connection {
 		}
 
 		$subscribed_events = self::webhook_event_names( isset( $webhook['event_types'] ) ? $webhook['event_types'] : array() );
-		$missing_events    = array_values( array_diff( self::REQUIRED_EVENTS, $subscribed_events ) );
+		$missing_events    = self::missing_required_events( $subscribed_events );
 		if ( ! empty( $missing_events ) ) {
 			$status                   = self::status( 'partial', __( 'PayPal API and webhook URL are connected, but one or more required webhook events are not subscribed.', 'membexa' ) );
 			$status['webhook_url']    = $returned_url;
@@ -226,6 +226,24 @@ final class PayPal_Connection {
 			}
 		}
 		return array_values( array_unique( $names ) );
+	}
+
+	/**
+	 * Return required events that are not covered by the PayPal webhook.
+	 *
+	 * PayPal uses an asterisk event name to represent a webhook subscribed to all
+	 * present and future event types. A wildcard therefore covers every Membexa
+	 * required event and must not be reported as missing.
+	 *
+	 * @param array $subscribed_events Event names returned by PayPal.
+	 * @return array
+	 */
+	private static function missing_required_events( $subscribed_events ) {
+		if ( in_array( '*', (array) $subscribed_events, true ) ) {
+			return array();
+		}
+
+		return array_values( array_diff( self::REQUIRED_EVENTS, (array) $subscribed_events ) );
 	}
 
 	/** Build a keyed fingerprint so saved verification cannot survive credential changes. */
