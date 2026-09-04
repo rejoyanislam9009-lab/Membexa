@@ -19,6 +19,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class PayPal_Connection {
 	const OPTION = 'membexa_paypal_connection_status';
 
+	const REQUIRED_EVENTS = array(
+		'BILLING.SUBSCRIPTION.ACTIVATED',
+		'BILLING.SUBSCRIPTION.UPDATED',
+		'BILLING.SUBSCRIPTION.CANCELLED',
+		'BILLING.SUBSCRIPTION.EXPIRED',
+		'BILLING.SUBSCRIPTION.SUSPENDED',
+		'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
+		'PAYMENT.SALE.COMPLETED',
+	);
+
 	/** Register administrator hooks. */
 	public function hooks() {
 		add_action( 'admin_post_membexa_verify_paypal', array( $this, 'handle_verify' ) );
@@ -38,8 +48,8 @@ final class PayPal_Connection {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'                   => 'membexa-settings',
-					'tab'                    => 'payments',
+					'page'                    => 'membexa-settings',
+					'tab'                     => 'payments',
 					'membexa_paypal_verified' => 'connected' === $status['state'] ? '1' : '0',
 				),
 				admin_url( 'admin.php' )
@@ -78,12 +88,13 @@ final class PayPal_Connection {
 				'webhook_verified' => false,
 				'expected_url'     => rest_url( 'membexa/v1/paypal/webhook' ),
 				'webhook_url'      => '',
+				'missing_events'   => array(),
 			)
 		);
 	}
 
 	/**
-	 * Verify OAuth credentials, the configured Webhook ID, and the webhook URL.
+	 * Verify OAuth credentials, Webhook ID/URL, and required webhook events.
 	 *
 	 * @return array
 	 */
@@ -110,7 +121,7 @@ final class PayPal_Connection {
 			return self::status( 'partial', $webhook->get_error_message() );
 		}
 
-		$returned_id = isset( $webhook['id'] ) ? sanitize_text_field( $webhook['id'] ) : '';
+		$returned_id  = isset( $webhook['id'] ) ? sanitize_text_field( $webhook['id'] ) : '';
 		$returned_url = isset( $webhook['url'] ) ? esc_url_raw( $webhook['url'] ) : '';
 		$expected_url = rest_url( 'membexa/v1/paypal/webhook' );
 
@@ -124,7 +135,16 @@ final class PayPal_Connection {
 			return $status;
 		}
 
-		$status                     = self::status( 'connected', __( 'PayPal API credentials and webhook are verified successfully.', 'membexa' ) );
+		$subscribed_events = self::webhook_event_names( isset( $webhook['event_types'] ) ? $webhook['event_types'] : array() );
+		$missing_events    = array_values( array_diff( self::REQUIRED_EVENTS, $subscribed_events ) );
+		if ( ! empty( $missing_events ) ) {
+			$status                   = self::status( 'partial', __( 'PayPal API and webhook URL are connected, but one or more required webhook events are not subscribed.', 'membexa' ) );
+			$status['webhook_url']    = $returned_url;
+			$status['missing_events'] = $missing_events;
+			return $status;
+		}
+
+		$status                     = self::status( 'connected', __( 'PayPal API credentials, webhook URL, and required webhook events are verified successfully.', 'membexa' ) );
 		$status['webhook_verified'] = true;
 		$status['webhook_url']      = $returned_url;
 		return $status;
@@ -197,7 +217,18 @@ final class PayPal_Connection {
 		return $data;
 	}
 
-	/** Build a non-secret fingerprint so saved verification cannot survive credential changes. */
+	/** Extract subscribed event names from a PayPal webhook response. */
+	private static function webhook_event_names( $events ) {
+		$names = array();
+		foreach ( (array) $events as $event ) {
+			if ( is_array( $event ) && ! empty( $event['name'] ) ) {
+				$names[] = sanitize_text_field( $event['name'] );
+			}
+		}
+		return array_values( array_unique( $names ) );
+	}
+
+	/** Build a keyed fingerprint so saved verification cannot survive credential changes. */
 	private static function fingerprint() {
 		$material = implode(
 			'|',
@@ -245,6 +276,7 @@ final class PayPal_Connection {
 			'webhook_verified' => false,
 			'expected_url'     => rest_url( 'membexa/v1/paypal/webhook' ),
 			'webhook_url'      => '',
+			'missing_events'   => array(),
 			'fingerprint'      => self::fingerprint(),
 		);
 	}
@@ -281,38 +313,31 @@ final class PayPal_Connection {
 		);
 		$state      = isset( $labels[ $status['state'] ] ) ? $status['state'] : 'unverified';
 		$data       = array(
-			'label'       => $labels[ $state ],
-			'className'   => $classes[ $state ],
-			'message'     => $status['message'],
-			'mode'        => $status['mode'],
-			'verifiedAt'  => in_array( $state, array( 'connected', 'partial', 'failed' ), true ) ? $status['verified_at'] : '',
-			'expectedUrl' => $status['expected_url'],
-			'webhookUrl'  => $status['webhook_url'],
-			'verifyUrl'   => $verify_url,
-			'button'      => __( 'Verify PayPal Connection', 'membexa' ),
-			'modeLabel'   => __( 'Mode', 'membexa' ),
-			'checkedLabel'=> __( 'Last checked', 'membexa' ),
-			'expectedLabel'=> __( 'Expected webhook', 'membexa' ),
-			'foundLabel'  => __( 'PayPal webhook', 'membexa' ),
+			'label'         => $labels[ $state ],
+			'className'     => $classes[ $state ],
+			'message'       => $status['message'],
+			'mode'          => $status['mode'],
+			'verifiedAt'    => in_array( $state, array( 'connected', 'partial', 'failed' ), true ) ? $status['verified_at'] : '',
+			'expectedUrl'   => $status['expected_url'],
+			'webhookUrl'    => $status['webhook_url'],
+			'missingEvents' => array_values( (array) $status['missing_events'] ),
+			'verifyUrl'     => $verify_url,
+			'button'        => __( 'Verify PayPal Connection', 'membexa' ),
+			'modeLabel'     => __( 'Mode', 'membexa' ),
+			'checkedLabel'  => __( 'Last checked', 'membexa' ),
+			'expectedLabel' => __( 'Expected webhook', 'membexa' ),
+			'foundLabel'    => __( 'PayPal webhook', 'membexa' ),
+			'missingLabel'  => __( 'Missing events', 'membexa' ),
 		);
 		?>
 		<script>
 		(function () {
 			'use strict';
 			var data = <?php echo wp_json_encode( $data ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_json_encode safely serializes fixed admin status data. ?>;
-			var headings = document.querySelectorAll('.membexa-admin form[action="options.php"] h2');
-			var paypalHeading = null;
-			headings.forEach(function (heading) {
-				if (heading.textContent.trim() === 'PayPal') {
-					paypalHeading = heading;
-				}
-			});
-			if (!paypalHeading || document.getElementById('membexa-paypal-connection-status')) {
+			var clientId = document.getElementById('membexa-paypal-client-id');
+			var table = clientId ? clientId.closest('table') : null;
+			if (!table || document.getElementById('membexa-paypal-connection-status')) {
 				return;
-			}
-			var anchor = paypalHeading.nextElementSibling;
-			if (anchor && anchor.classList.contains('membexa-provider-links')) {
-				anchor = anchor.nextElementSibling;
 			}
 			var box = document.createElement('div');
 			box.id = 'membexa-paypal-connection-status';
@@ -344,6 +369,12 @@ final class PayPal_Connection {
 				found.textContent = data.foundLabel + ': ' + data.webhookUrl;
 				box.appendChild(found);
 			}
+			if (data.missingEvents.length) {
+				var missing = document.createElement('p');
+				missing.className = 'description';
+				missing.textContent = data.missingLabel + ': ' + data.missingEvents.join(', ');
+				box.appendChild(missing);
+			}
 			var action = document.createElement('p');
 			var button = document.createElement('a');
 			button.href = data.verifyUrl;
@@ -351,11 +382,7 @@ final class PayPal_Connection {
 			button.textContent = data.button;
 			action.appendChild(button);
 			box.appendChild(action);
-			if (anchor) {
-				paypalHeading.parentNode.insertBefore(box, anchor);
-			} else {
-				paypalHeading.insertAdjacentElement('afterend', box);
-			}
+			table.parentNode.insertBefore(box, table);
 		}());
 		</script>
 		<?php
