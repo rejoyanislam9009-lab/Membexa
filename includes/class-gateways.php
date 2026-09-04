@@ -13,12 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Delegates paid membership checkout to WooCommerce and its installed gateways.
- *
- * Membexa intentionally does not own payment credentials. Stripe, PayPal, bKash,
- * or any other payment method is installed/configured as a WooCommerce gateway.
- */
+/** Delegates paid membership checkout to WooCommerce and its installed gateways. */
 final class Gateways {
 	/** Return enabled WooCommerce payment gateways. */
 	public static function enabled() {
@@ -32,25 +27,19 @@ final class Gateways {
 		return $available;
 	}
 
-	/** Paid plans use WooCommerce checkout, so compatibility is product based. */
+	/** Paid plans are compatible when linked to a valid WooCommerce product. */
 	public static function available_for_plan( $plan ) {
 		if ( ! is_array( $plan ) || 'free' === $plan['billing'] || 0.0 === (float) $plan['price'] ) {
 			return array();
 		}
-		if ( ! self::woocommerce_ready() || empty( $plan['woocommerce_product_id'] ) || ! wc_get_product( $plan['woocommerce_product_id'] ) ) {
+		$product_id = self::product_id_for_plan( $plan['id'] );
+		if ( ! self::woocommerce_ready() || ! $product_id || ! wc_get_product( $product_id ) ) {
 			return array();
 		}
 		return self::enabled();
 	}
 
-	/**
-	 * Start checkout by placing the plan's linked WooCommerce product in the cart.
-	 *
-	 * @param string $gateway Ignored; gateway selection happens at WooCommerce checkout.
-	 * @param int    $user_id WordPress user ID.
-	 * @param int    $plan_id Membership plan ID.
-	 * @return string|WP_Error
-	 */
+	/** Start checkout through the linked WooCommerce product. */
 	public static function start_checkout( $gateway, $user_id, $plan_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		$plan = Plan::get( $plan_id );
 		if ( ! $plan ) {
@@ -59,7 +48,7 @@ final class Gateways {
 		if ( ! self::woocommerce_ready() ) {
 			return new WP_Error( 'membexa_woocommerce_required', __( 'WooCommerce must be active to process paid Membexa plans.', 'membexa' ) );
 		}
-		$product_id = absint( $plan['woocommerce_product_id'] );
+		$product_id = self::product_id_for_plan( $plan_id );
 		$product    = $product_id ? wc_get_product( $product_id ) : false;
 		if ( ! $product || ! $product->is_purchasable() ) {
 			return new WP_Error( 'membexa_payment_product_missing', __( 'This plan is not linked to a purchasable WooCommerce product.', 'membexa' ) );
@@ -67,8 +56,6 @@ final class Gateways {
 		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
 			return new WP_Error( 'membexa_cart_unavailable', __( 'WooCommerce cart is not available.', 'membexa' ) );
 		}
-
-		// Keep checkout deterministic: the selected membership product is the purchase being started.
 		WC()->cart->empty_cart();
 		$added = WC()->cart->add_to_cart( $product_id, 1, 0, array(), array( 'membexa_plan_id' => absint( $plan_id ) ) );
 		if ( ! $added ) {
@@ -92,6 +79,11 @@ final class Gateways {
 	/** Determine whether a billing model is recurring. */
 	public static function is_recurring( $billing ) {
 		return in_array( $billing, array( 'monthly', 'yearly' ), true );
+	}
+
+	/** Get the WooCommerce product linked to a plan. */
+	public static function product_id_for_plan( $plan_id ) {
+		return absint( get_post_meta( absint( $plan_id ), '_membexa_payment_product_id', true ) );
 	}
 
 	/** Whether WooCommerce is available for paid checkout. */
