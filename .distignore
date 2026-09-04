@@ -1,5 +1,6 @@
 /.git
 /.github
+/addons
 /build
 /vendor
 /node_modules

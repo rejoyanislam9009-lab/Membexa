@@ -50,9 +50,6 @@ final class Plugin {
 		( new Account() )->hooks();
 		( new Plan() )->hooks();
 		( new Subscriptions() )->hooks();
-		( new Stripe() )->hooks();
-		( new PayPal() )->hooks();
-		( new Bkash() )->hooks();
 		( new Access() )->hooks();
 		( new Commerce() )->hooks();
 		( new Commerce_Lifecycle() )->hooks();
@@ -63,7 +60,7 @@ final class Plugin {
 			( new Admin() )->hooks();
 			( new Integrations_Admin() )->hooks();
 			( new Setup() )->hooks();
-			( new PayPal_Connection() )->hooks();
+			( new Payment_Addons_Admin() )->hooks();
 			( new Help() )->hooks();
 		}
 
@@ -75,6 +72,19 @@ final class Plugin {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
+			if ( $installed && version_compare( $installed, '1.5.0', '<' ) ) {
+				$payments = get_option( 'membexa_payments', array() );
+				$migration = array(
+					'stripe' => empty( $payments['stripe_enabled'] ) ? 0 : 1,
+					'paypal' => empty( $payments['paypal_enabled'] ) ? 0 : 1,
+					'bkash'  => empty( $payments['bkash_enabled'] ) ? 0 : 1,
+				);
+				update_option( 'membexa_payment_addon_migration', $migration, false );
+				$payments['stripe_enabled'] = 0;
+				$payments['paypal_enabled'] = 0;
+				$payments['bkash_enabled']  = 0;
+				update_option( 'membexa_payments', $payments, false );
+			}
 			if ( ! $installed || version_compare( $installed, '1.4.0', '<' ) ) {
 				update_option( 'membexa_setup_pages_pending', 1, false );
 			}

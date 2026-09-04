@@ -1,6 +1,6 @@
 <?php
 /**
- * Payment gateway coordinator.
+ * Modular payment gateway registry.
  *
  * @package Membexa
  */
@@ -14,20 +14,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Provides a single interface for supported payment gateways.
+ * Coordinates payment gateway add-ons without bundling gateway configuration into core.
  */
 final class Gateways {
 	/**
-	 * Gateway labels.
+	 * Registered gateways.
 	 *
-	 * @return array
+	 * @var array
 	 */
-	public static function labels() {
-		return array(
-			'stripe' => __( 'Stripe', 'membexa' ),
-			'paypal' => __( 'PayPal', 'membexa' ),
-			'bkash'  => __( 'bKash', 'membexa' ),
+	private static $registered = array();
+
+	/**
+	 * Register a payment gateway add-on.
+	 *
+	 * @param string $key  Stable gateway key.
+	 * @param array  $args Gateway callbacks and metadata.
+	 * @return bool
+	 */
+	public static function register( $key, $args ) {
+		$key  = sanitize_key( $key );
+		$args = is_array( $args ) ? $args : array();
+		if ( ! $key || empty( $args['label'] ) || empty( $args['checkout_callback'] ) || ! is_callable( $args['checkout_callback'] ) ) {
+			return false;
+		}
+
+		self::$registered[ $key ] = wp_parse_args(
+			$args,
+			array(
+				'label'              => $key,
+				'enabled_callback'   => '__return_true',
+				'available_callback' => '__return_true',
+				'checkout_callback'  => null,
+				'cancel_callback'    => null,
+				'settings_url'       => '',
+				'addon_version'      => '',
+				'supports_recurring' => false,
+			)
 		);
+		return true;
+	}
+
+	/** Return all registered gateway definitions. */
+	public static function all() {
+		return self::$registered;
+	}
+
+	/** Determine whether one add-on gateway is registered. */
+	public static function is_registered( $key ) {
+		return isset( self::$registered[ sanitize_key( $key ) ] );
+	}
+
+	/** Return registered gateway labels. */
+	public static function labels() {
+		$labels = array();
+		foreach ( self::$registered as $key => $gateway ) {
+			$labels[ $key ] = (string) $gateway['label'];
+		}
+		return $labels;
 	}
 
 	/**
@@ -38,55 +81,37 @@ final class Gateways {
 	 */
 	public static function available_for_plan( $plan ) {
 		$available = array();
-		$labels    = self::labels();
-
 		if ( ! is_array( $plan ) || 'free' === $plan['billing'] || 0.0 === (float) $plan['price'] ) {
 			return $available;
 		}
 
-		if ( Stripe::enabled() && ! empty( $plan['stripe_price_id'] ) ) {
-			$available['stripe'] = $labels['stripe'];
+		foreach ( self::$registered as $key => $gateway ) {
+			$enabled = is_callable( $gateway['enabled_callback'] ) ? (bool) call_user_func( $gateway['enabled_callback'] ) : true;
+			if ( ! $enabled ) {
+				continue;
+			}
+			$compatible = is_callable( $gateway['available_callback'] ) ? (bool) call_user_func( $gateway['available_callback'], $plan ) : true;
+			if ( $compatible ) {
+				$available[ $key ] = (string) $gateway['label'];
+			}
 		}
-
-		$paypal_recurring = self::is_recurring( $plan['billing'] );
-		if ( PayPal::enabled() && ( ! $paypal_recurring || ! empty( $plan['paypal_plan_id'] ) ) ) {
-			$available['paypal'] = $labels['paypal'];
-		}
-
-		if (
-			Bkash::enabled()
-			&& 'BDT' === strtoupper( (string) $plan['currency'] )
-			&& in_array( $plan['billing'], array( 'one_time', 'lifetime' ), true )
-		) {
-			$available['bkash'] = $labels['bkash'];
-		}
-
 		return $available;
 	}
 
-	/**
-	 * Return enabled gateway labels, regardless of plan compatibility.
-	 *
-	 * @return array
-	 */
+	/** Return enabled registered gateway labels, regardless of plan compatibility. */
 	public static function enabled() {
-		$labels  = self::labels();
 		$enabled = array();
-
-		if ( Stripe::enabled() ) {
-			$enabled['stripe'] = $labels['stripe'];
-		}
-		if ( PayPal::enabled() ) {
-			$enabled['paypal'] = $labels['paypal'];
-		}
-		if ( Bkash::enabled() ) {
-			$enabled['bkash'] = $labels['bkash'];
+		foreach ( self::$registered as $key => $gateway ) {
+			$is_enabled = is_callable( $gateway['enabled_callback'] ) ? (bool) call_user_func( $gateway['enabled_callback'] ) : true;
+			if ( $is_enabled ) {
+				$enabled[ $key ] = (string) $gateway['label'];
+			}
 		}
 		return $enabled;
 	}
 
 	/**
-	 * Start checkout using an allowed gateway.
+	 * Start checkout using a registered and compatible gateway.
 	 *
 	 * @param string $gateway Gateway key.
 	 * @param int    $user_id WordPress user ID.
@@ -99,25 +124,21 @@ final class Gateways {
 			return new WP_Error( 'membexa_invalid_plan', __( 'The selected membership plan is not available.', 'membexa' ) );
 		}
 
+		$gateway = sanitize_key( $gateway );
+		if ( ! isset( self::$registered[ $gateway ] ) ) {
+			return new WP_Error( 'membexa_gateway_missing_addon', __( 'This payment method requires its Membexa gateway add-on to be installed and active.', 'membexa' ) );
+		}
+
 		$available = self::available_for_plan( $plan );
-		$gateway   = sanitize_key( $gateway );
 		if ( ! isset( $available[ $gateway ] ) ) {
 			return new WP_Error( 'membexa_gateway_unavailable', __( 'The selected payment method is not available for this plan.', 'membexa' ) );
 		}
 
-		switch ( $gateway ) {
-			case 'paypal':
-				return PayPal::start_checkout( $user_id, $plan_id );
-			case 'bkash':
-				return Bkash::start_checkout( $user_id, $plan_id );
-			case 'stripe':
-			default:
-				return Stripe::start_checkout( $user_id, $plan_id );
-		}
+		return call_user_func( self::$registered[ $gateway ]['checkout_callback'], $user_id, $plan_id );
 	}
 
 	/**
-	 * Cancel a member subscription through its owning gateway when needed.
+	 * Cancel through the owning gateway add-on when supported.
 	 *
 	 * @param object $subscription Local subscription record.
 	 * @return string|WP_Error Result code: scheduled or cancelled.
@@ -127,18 +148,17 @@ final class Gateways {
 			return new WP_Error( 'membexa_invalid_subscription', __( 'The selected subscription could not be found.', 'membexa' ) );
 		}
 
-		$plan = Plan::get( $subscription->plan_id );
 		if ( 'woocommerce_subscription' === $subscription->gateway ) {
 			return Commerce::cancel_woocommerce_subscription( $subscription );
 		}
-		if ( 'stripe' === $subscription->gateway && $plan && self::is_recurring( $plan['billing'] ) ) {
-			$result = Stripe::cancel_at_period_end( $subscription );
-			return is_wp_error( $result ) ? $result : 'scheduled';
-		}
 
-		if ( 'paypal' === $subscription->gateway && $plan && self::is_recurring( $plan['billing'] ) ) {
-			$result = PayPal::cancel_subscription( $subscription );
+		$key = sanitize_key( $subscription->gateway );
+		if ( isset( self::$registered[ $key ] ) && is_callable( self::$registered[ $key ]['cancel_callback'] ) ) {
+			$result = call_user_func( self::$registered[ $key ]['cancel_callback'], $subscription );
 			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+			if ( in_array( $result, array( 'scheduled', 'cancelled' ), true ) ) {
 				return $result;
 			}
 		}
@@ -147,12 +167,7 @@ final class Gateways {
 		return 'cancelled';
 	}
 
-	/**
-	 * Determine whether a billing model is recurring.
-	 *
-	 * @param string $billing Billing model.
-	 * @return bool
-	 */
+	/** Determine whether a billing model is recurring. */
 	public static function is_recurring( $billing ) {
 		return in_array( $billing, array( 'monthly', 'yearly' ), true );
 	}
