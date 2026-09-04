@@ -86,6 +86,244 @@
 	margin: 0;
 }
 
+.membexa-payments-hub {
+	max-width: 1280px;
+}
+
+.membexa-woo-connection {
+	display: flex;
+	justify-content: space-between;
+	gap: 24px;
+	align-items: center;
+	box-sizing: border-box;
+	max-width: 1200px;
+	margin: 18px 0 20px;
+	padding: 14px 16px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left-width: 4px;
+	border-radius: 4px;
+}
+
+.membexa-woo-connection.is-connected {
+	border-left-color: #00a32a;
+}
+
+.membexa-woo-connection.is-disconnected {
+	border-left-color: #dba617;
+}
+
+.membexa-woo-connection > div {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	white-space: nowrap;
+}
+
+.membexa-woo-connection p {
+	max-width: 760px;
+	margin: 0;
+	color: #50575e;
+}
+
+.membexa-live-dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: #8c8f94;
+}
+
+.is-connected .membexa-live-dot {
+	background: #00a32a;
+	box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.12);
+}
+
+.membexa-payment-section-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+	gap: 18px;
+	max-width: 1200px;
+	margin: 20px 0 10px;
+}
+
+.membexa-payment-section-heading h2 {
+	margin-bottom: 4px;
+}
+
+.membexa-payment-section-heading p {
+	max-width: 850px;
+	margin: 0;
+	color: #50575e;
+}
+
+.membexa-payment-status,
+.membexa-source-badge {
+	display: inline-flex;
+	align-items: center;
+	min-height: 24px;
+	box-sizing: border-box;
+	padding: 2px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.5;
+}
+
+.membexa-payment-status.is-live {
+	background: #edfaef;
+	color: #006b1b;
+}
+
+.membexa-payment-status.is-disabled {
+	background: #fff8e5;
+	color: #7a4b00;
+}
+
+.membexa-payment-status.is-installed {
+	background: #f0f0f1;
+	color: #3c434a;
+}
+
+.membexa-payment-status.is-available,
+.membexa-source-badge {
+	background: #eaf3ff;
+	color: #135e96;
+}
+
+.membexa-gateway-summary {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(120px, 190px));
+	gap: 12px;
+	max-width: 620px;
+	margin: 16px 0 20px;
+}
+
+.membexa-gateway-summary > div {
+	padding: 14px 16px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.membexa-gateway-summary strong,
+.membexa-gateway-summary span {
+	display: block;
+}
+
+.membexa-gateway-summary strong {
+	font-size: 24px;
+	line-height: 1.2;
+}
+
+.membexa-gateway-summary span {
+	margin-top: 3px;
+	color: #50575e;
+}
+
+.membexa-plugin-marketplace {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+	max-width: 1200px;
+	margin: 18px 0;
+}
+
+.membexa-marketplace-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-height: 270px;
+	box-sizing: border-box;
+	padding: 18px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+}
+
+.membexa-marketplace-card-top {
+	display: grid;
+	grid-template-columns: 34px 56px 1fr;
+	gap: 12px;
+	align-items: center;
+}
+
+.membexa-marketplace-number {
+	align-self: start;
+	font-weight: 700;
+	color: #646970;
+}
+
+.membexa-marketplace-icon {
+	width: 56px;
+	height: 56px;
+	object-fit: cover;
+	border-radius: 8px;
+	background: #f0f0f1;
+}
+
+.membexa-marketplace-icon.is-fallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.membexa-marketplace-icon.is-fallback .dashicons {
+	width: 28px;
+	height: 28px;
+	font-size: 28px;
+}
+
+.membexa-marketplace-title h3 {
+	margin: 0 0 7px;
+	font-size: 17px;
+	line-height: 1.35;
+}
+
+.membexa-marketplace-description {
+	flex: 1;
+	margin: 16px 0;
+	color: #3c434a;
+}
+
+.membexa-marketplace-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 14px;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f1;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.membexa-marketplace-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 14px;
+}
+
+.membexa-live-gateways small {
+	color: #646970;
+}
+
+.membexa-payments-hub .page-numbers {
+	margin-top: 18px;
+}
+
+@media (max-width: 960px) {
+	.membexa-plugin-marketplace {
+		grid-template-columns: 1fr;
+	}
+
+	.membexa-woo-connection {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 8px;
+	}
+}
+
 @media (max-width: 782px) {
 	.membexa-stat-grid {
 		grid-template-columns: 1fr 1fr;
@@ -99,10 +337,35 @@
 	.membexa-payment-search .regular-text {
 		width: 100%;
 	}
+
+	.membexa-payment-section-heading {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.membexa-gateway-summary {
+		grid-template-columns: repeat(3, 1fr);
+	}
+
+	.membexa-payment-table {
+		display: block;
+		overflow-x: auto;
+	}
 }
 
 @media (max-width: 480px) {
-	.membexa-stat-grid {
+	.membexa-stat-grid,
+	.membexa-gateway-summary {
 		grid-template-columns: 1fr;
+	}
+
+	.membexa-marketplace-card-top {
+		grid-template-columns: 28px 48px 1fr;
+	}
+
+	.membexa-marketplace-icon {
+		width: 48px;
+		height: 48px;
 	}
 }
