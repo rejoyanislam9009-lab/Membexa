@@ -30,34 +30,10 @@ final class Settings {
 	 * @return void
 	 */
 	public function register() {
-		register_setting(
-			'membexa_general_group',
-			'membexa_general',
-			array(
-				'sanitize_callback' => array( $this, 'sanitize_general' ),
-			)
-		);
-		register_setting(
-			'membexa_payments_group',
-			'membexa_payments',
-			array(
-				'sanitize_callback' => array( $this, 'sanitize_payments' ),
-			)
-		);
-		register_setting(
-			'membexa_emails_group',
-			'membexa_emails',
-			array(
-				'sanitize_callback' => array( $this, 'sanitize_emails' ),
-			)
-		);
-		register_setting(
-			'membexa_data_group',
-			'membexa_data',
-			array(
-				'sanitize_callback' => array( $this, 'sanitize_data' ),
-			)
-		);
+		register_setting( 'membexa_general_group', 'membexa_general', array( 'sanitize_callback' => array( $this, 'sanitize_general' ) ) );
+		register_setting( 'membexa_payments_group', 'membexa_payments', array( 'sanitize_callback' => array( $this, 'sanitize_payments' ) ) );
+		register_setting( 'membexa_emails_group', 'membexa_emails', array( 'sanitize_callback' => array( $this, 'sanitize_emails' ) ) );
+		register_setting( 'membexa_data_group', 'membexa_data', array( 'sanitize_callback' => array( $this, 'sanitize_data' ) ) );
 	}
 
 	/**
@@ -93,6 +69,17 @@ final class Settings {
 			'stripe_enabled'        => empty( $input['stripe_enabled'] ) ? 0 : 1,
 			'stripe_secret_key'     => isset( $input['stripe_secret_key'] ) ? sanitize_text_field( wp_unslash( $input['stripe_secret_key'] ) ) : '',
 			'stripe_webhook_secret' => isset( $input['stripe_webhook_secret'] ) ? sanitize_text_field( wp_unslash( $input['stripe_webhook_secret'] ) ) : '',
+			'paypal_enabled'        => empty( $input['paypal_enabled'] ) ? 0 : 1,
+			'paypal_sandbox'        => empty( $input['paypal_sandbox'] ) ? 0 : 1,
+			'paypal_client_id'      => isset( $input['paypal_client_id'] ) ? sanitize_text_field( wp_unslash( $input['paypal_client_id'] ) ) : '',
+			'paypal_client_secret'  => isset( $input['paypal_client_secret'] ) ? sanitize_text_field( wp_unslash( $input['paypal_client_secret'] ) ) : '',
+			'paypal_webhook_id'     => isset( $input['paypal_webhook_id'] ) ? sanitize_text_field( wp_unslash( $input['paypal_webhook_id'] ) ) : '',
+			'bkash_enabled'         => empty( $input['bkash_enabled'] ) ? 0 : 1,
+			'bkash_sandbox'         => empty( $input['bkash_sandbox'] ) ? 0 : 1,
+			'bkash_username'        => isset( $input['bkash_username'] ) ? sanitize_text_field( wp_unslash( $input['bkash_username'] ) ) : '',
+			'bkash_password'        => isset( $input['bkash_password'] ) ? sanitize_text_field( wp_unslash( $input['bkash_password'] ) ) : '',
+			'bkash_app_key'         => isset( $input['bkash_app_key'] ) ? sanitize_text_field( wp_unslash( $input['bkash_app_key'] ) ) : '',
+			'bkash_app_secret'      => isset( $input['bkash_app_secret'] ) ? sanitize_text_field( wp_unslash( $input['bkash_app_secret'] ) ) : '',
 		);
 	}
 
@@ -120,9 +107,7 @@ final class Settings {
 	 */
 	public function sanitize_data( $input ) {
 		$input = is_array( $input ) ? $input : array();
-		return array(
-			'delete_on_uninstall' => empty( $input['delete_on_uninstall'] ) ? 0 : 1,
-		);
+		return array( 'delete_on_uninstall' => empty( $input['delete_on_uninstall'] ) ? 0 : 1 );
 	}
 
 	/**
@@ -154,6 +139,17 @@ final class Settings {
 				'stripe_enabled'        => 0,
 				'stripe_secret_key'     => '',
 				'stripe_webhook_secret' => '',
+				'paypal_enabled'        => 0,
+				'paypal_sandbox'        => 1,
+				'paypal_client_id'      => '',
+				'paypal_client_secret'  => '',
+				'paypal_webhook_id'     => '',
+				'bkash_enabled'         => 0,
+				'bkash_sandbox'         => 1,
+				'bkash_username'        => '',
+				'bkash_password'        => '',
+				'bkash_app_key'         => '',
+				'bkash_app_secret'      => '',
 			)
 		);
 	}
@@ -181,19 +177,10 @@ final class Settings {
 	 * @return array
 	 */
 	public static function data() {
-		return wp_parse_args(
-			get_option( 'membexa_data', array() ),
-			array(
-				'delete_on_uninstall' => 0,
-			)
-		);
+		return wp_parse_args( get_option( 'membexa_data', array() ), array( 'delete_on_uninstall' => 0 ) );
 	}
 
-	/**
-	 * Get the Stripe secret key, preferring wp-config.php.
-	 *
-	 * @return string
-	 */
+	/** Get Stripe secret key, preferring wp-config.php. */
 	public static function stripe_secret_key() {
 		if ( defined( 'MEMBEXA_STRIPE_SECRET_KEY' ) && MEMBEXA_STRIPE_SECRET_KEY ) {
 			return (string) MEMBEXA_STRIPE_SECRET_KEY;
@@ -202,16 +189,75 @@ final class Settings {
 		return (string) $settings['stripe_secret_key'];
 	}
 
-	/**
-	 * Get the Stripe webhook signing secret, preferring wp-config.php.
-	 *
-	 * @return string
-	 */
+	/** Get Stripe webhook secret, preferring wp-config.php. */
 	public static function stripe_webhook_secret() {
 		if ( defined( 'MEMBEXA_STRIPE_WEBHOOK_SECRET' ) && MEMBEXA_STRIPE_WEBHOOK_SECRET ) {
 			return (string) MEMBEXA_STRIPE_WEBHOOK_SECRET;
 		}
 		$settings = self::payments();
 		return (string) $settings['stripe_webhook_secret'];
+	}
+
+	/** Get PayPal client ID, preferring wp-config.php. */
+	public static function paypal_client_id() {
+		if ( defined( 'MEMBEXA_PAYPAL_CLIENT_ID' ) && MEMBEXA_PAYPAL_CLIENT_ID ) {
+			return (string) MEMBEXA_PAYPAL_CLIENT_ID;
+		}
+		$settings = self::payments();
+		return (string) $settings['paypal_client_id'];
+	}
+
+	/** Get PayPal client secret, preferring wp-config.php. */
+	public static function paypal_client_secret() {
+		if ( defined( 'MEMBEXA_PAYPAL_CLIENT_SECRET' ) && MEMBEXA_PAYPAL_CLIENT_SECRET ) {
+			return (string) MEMBEXA_PAYPAL_CLIENT_SECRET;
+		}
+		$settings = self::payments();
+		return (string) $settings['paypal_client_secret'];
+	}
+
+	/** Get PayPal webhook ID, preferring wp-config.php. */
+	public static function paypal_webhook_id() {
+		if ( defined( 'MEMBEXA_PAYPAL_WEBHOOK_ID' ) && MEMBEXA_PAYPAL_WEBHOOK_ID ) {
+			return (string) MEMBEXA_PAYPAL_WEBHOOK_ID;
+		}
+		$settings = self::payments();
+		return (string) $settings['paypal_webhook_id'];
+	}
+
+	/** Get bKash merchant username, preferring wp-config.php. */
+	public static function bkash_username() {
+		if ( defined( 'MEMBEXA_BKASH_USERNAME' ) && MEMBEXA_BKASH_USERNAME ) {
+			return (string) MEMBEXA_BKASH_USERNAME;
+		}
+		$settings = self::payments();
+		return (string) $settings['bkash_username'];
+	}
+
+	/** Get bKash merchant password, preferring wp-config.php. */
+	public static function bkash_password() {
+		if ( defined( 'MEMBEXA_BKASH_PASSWORD' ) && MEMBEXA_BKASH_PASSWORD ) {
+			return (string) MEMBEXA_BKASH_PASSWORD;
+		}
+		$settings = self::payments();
+		return (string) $settings['bkash_password'];
+	}
+
+	/** Get bKash app key, preferring wp-config.php. */
+	public static function bkash_app_key() {
+		if ( defined( 'MEMBEXA_BKASH_APP_KEY' ) && MEMBEXA_BKASH_APP_KEY ) {
+			return (string) MEMBEXA_BKASH_APP_KEY;
+		}
+		$settings = self::payments();
+		return (string) $settings['bkash_app_key'];
+	}
+
+	/** Get bKash app secret, preferring wp-config.php. */
+	public static function bkash_app_secret() {
+		if ( defined( 'MEMBEXA_BKASH_APP_SECRET' ) && MEMBEXA_BKASH_APP_SECRET ) {
+			return (string) MEMBEXA_BKASH_APP_SECRET;
+		}
+		$settings = self::payments();
+		return (string) $settings['bkash_app_secret'];
 	}
 }
