@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Membexa – Membership & Subscription Plugin
+ * Plugin Name:       Membexa – Membership & Subscriptions
  * Description:       Create membership plans, recurring subscriptions, gated content, member accounts, and Stripe payments in WordPress.
  * Version:           1.0.0
  * Requires at least: 6.4
@@ -10,7 +10,6 @@
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       membexa
- * Domain Path:       /languages
  *
  * @package Membexa
  */
