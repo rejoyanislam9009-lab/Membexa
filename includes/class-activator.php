@@ -11,7 +11,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Handles plugin activation and deactivation.
+ */
 final class Activator {
+	/**
+	 * Install schema, defaults, and maintenance scheduling.
+	 *
+	 * @return void
+	 */
 	public static function activate() {
 		DB::install();
 
@@ -34,7 +42,9 @@ final class Activator {
 					'stripe_enabled'        => 0,
 					'stripe_secret_key'     => '',
 					'stripe_webhook_secret' => '',
-				)
+				),
+				'',
+				false
 			);
 		}
 
@@ -51,7 +61,12 @@ final class Activator {
 		}
 
 		if ( false === get_option( 'membexa_data', false ) ) {
-			add_option( 'membexa_data', array( 'delete_on_uninstall' => 0 ) );
+			add_option(
+				'membexa_data',
+				array(
+					'delete_on_uninstall' => 0,
+				)
+			);
 		}
 
 		update_option( 'membexa_version', MEMBEXA_VERSION );
@@ -61,6 +76,11 @@ final class Activator {
 		}
 	}
 
+	/**
+	 * Remove the scheduled maintenance event on deactivation.
+	 *
+	 * @return void
+	 */
 	public static function deactivate() {
 		$timestamp = wp_next_scheduled( 'membexa_daily_maintenance' );
 		if ( $timestamp ) {
