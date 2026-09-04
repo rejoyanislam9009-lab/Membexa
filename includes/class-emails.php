@@ -11,7 +11,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Sends membership lifecycle emails.
+ */
 final class Emails {
+	/**
+	 * Send the membership activation email.
+	 *
+	 * @param int $user_id WordPress user ID.
+	 * @param int $plan_id Membership plan ID.
+	 * @return void
+	 */
 	public static function membership_activated( $user_id, $plan_id ) {
 		$settings = Settings::emails();
 		if ( empty( $settings['activation_enabled'] ) ) {
@@ -22,11 +32,20 @@ final class Emails {
 		if ( ! $user || ! $plan ) {
 			return;
 		}
+		/* translators: %s: membership plan name. */
 		$subject = sprintf( __( 'Your %s membership is active', 'membexa' ), $plan['name'] );
-		$message = sprintf( __( "Hello %1$s,\n\nYour membership for %2$s is now active.\n\nThank you.", 'membexa' ), $user->display_name, $plan['name'] );
+		/* translators: 1: member display name, 2: membership plan name. */
+		$message = sprintf( __( "Hello %1\$s,\n\nYour membership for %2\$s is now active.\n\nThank you.", 'membexa' ), $user->display_name, $plan['name'] );
 		self::send( $user->user_email, $subject, $message );
 	}
 
+	/**
+	 * Send the membership cancellation email.
+	 *
+	 * @param int $user_id WordPress user ID.
+	 * @param int $plan_id Membership plan ID.
+	 * @return void
+	 */
 	public static function membership_canceled( $user_id, $plan_id ) {
 		$settings = Settings::emails();
 		if ( empty( $settings['cancel_enabled'] ) ) {
@@ -37,11 +56,21 @@ final class Emails {
 		if ( ! $user || ! $plan ) {
 			return;
 		}
+		/* translators: %s: membership plan name. */
 		$subject = sprintf( __( 'Your %s membership was canceled', 'membexa' ), $plan['name'] );
-		$message = sprintf( __( "Hello %1$s,\n\nYour membership for %2$s has been canceled.\n\nThank you.", 'membexa' ), $user->display_name, $plan['name'] );
+		/* translators: 1: member display name, 2: membership plan name. */
+		$message = sprintf( __( "Hello %1\$s,\n\nYour membership for %2\$s has been canceled.\n\nThank you.", 'membexa' ), $user->display_name, $plan['name'] );
 		self::send( $user->user_email, $subject, $message );
 	}
 
+	/**
+	 * Send a plain-text email using WordPress mail handling.
+	 *
+	 * @param string $to      Recipient email address.
+	 * @param string $subject Email subject.
+	 * @param string $message Email body.
+	 * @return void
+	 */
 	private static function send( $to, $subject, $message ) {
 		$settings = Settings::emails();
 		$headers  = array();
