@@ -18,9 +18,9 @@ global $wpdb;
 $membexa_subscriptions = $wpdb->prefix . 'membexa_subscriptions';
 $membexa_transactions  = $wpdb->prefix . 'membexa_transactions';
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Tables are created by Membexa and the names use the trusted WordPress table prefix.
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifier is a trusted WordPress-prefixed table name created by Membexa.
 $wpdb->query( "DROP TABLE IF EXISTS {$membexa_subscriptions}" );
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Tables are created by Membexa and the names use the trusted WordPress table prefix.
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifier is a trusted WordPress-prefixed table name created by Membexa.
 $wpdb->query( "DROP TABLE IF EXISTS {$membexa_transactions}" );
 
 $membexa_plan_ids = get_posts(
