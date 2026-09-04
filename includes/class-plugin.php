@@ -11,22 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Coordinates Membexa services and hooks.
- */
+/** Coordinates Membexa services and hooks. */
 final class Plugin {
-	/**
-	 * Singleton instance.
-	 *
-	 * @var Plugin|null
-	 */
+	/** @var Plugin|null */
 	private static $instance;
 
-	/**
-	 * Get the plugin singleton.
-	 *
-	 * @return Plugin
-	 */
+	/** Get the plugin singleton. */
 	public static function instance() {
 		if ( ! self::$instance ) {
 			self::$instance = new self();
@@ -35,14 +25,9 @@ final class Plugin {
 	}
 
 	/** Prevent direct construction. */
-	private function __construct() {
-	}
+	private function __construct() {}
 
-	/**
-	 * Bootstrap plugin services.
-	 *
-	 * @return void
-	 */
+	/** Bootstrap plugin services. */
 	public function run() {
 		$this->maybe_upgrade();
 
@@ -50,12 +35,10 @@ final class Plugin {
 		( new Account() )->hooks();
 		( new Plan() )->hooks();
 		( new Subscriptions() )->hooks();
-		( new Stripe() )->hooks();
-		( new PayPal() )->hooks();
-		( new Bkash() )->hooks();
 		( new Access() )->hooks();
 		( new Commerce() )->hooks();
 		( new Commerce_Lifecycle() )->hooks();
+		( new Payment_Integrations() )->hooks();
 		( new Shortcodes() )->hooks();
 		( new Privacy() )->hooks();
 
@@ -63,7 +46,6 @@ final class Plugin {
 			( new Admin() )->hooks();
 			( new Integrations_Admin() )->hooks();
 			( new Setup() )->hooks();
-			( new PayPal_Connection() )->hooks();
 			( new Help() )->hooks();
 		}
 
