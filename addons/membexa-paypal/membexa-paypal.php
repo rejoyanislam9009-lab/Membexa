@@ -24,6 +24,9 @@ function bootstrap() {
 		add_action( 'admin_notices', __NAMESPACE__ . '\\dependency_notice' );
 		return;
 	}
+
+	require_once __DIR__ . '/includes/class-paypal.php';
+	require_once __DIR__ . '/includes/class-paypal-connection.php';
 	maybe_migrate();
 	( new \Membexa\PayPal() )->hooks();
 	if ( is_admin() ) {
