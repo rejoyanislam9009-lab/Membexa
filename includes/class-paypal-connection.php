@@ -281,6 +281,17 @@ final class PayPal_Connection {
 		);
 	}
 
+	/** Build an unescaped admin verification URL for JavaScript/JSON transport. */
+	private static function verify_action_url() {
+		return add_query_arg(
+			array(
+				'action'   => 'membexa_verify_paypal',
+				'_wpnonce' => wp_create_nonce( 'membexa_verify_paypal' ),
+			),
+			admin_url( 'admin-post.php' )
+		);
+	}
+
 	/** Render PayPal connection state inside the Payments settings page. */
 	public function render_payment_status() {
 		$screen = get_current_screen();
@@ -294,7 +305,7 @@ final class PayPal_Connection {
 		}
 
 		$status     = self::current_status();
-		$verify_url = wp_nonce_url( admin_url( 'admin-post.php?action=membexa_verify_paypal' ), 'membexa_verify_paypal' );
+		$verify_url = self::verify_action_url();
 		$labels     = array(
 			'connected'  => __( 'Connected', 'membexa' ),
 			'partial'    => __( 'API Connected — Webhook needs attention', 'membexa' ),
