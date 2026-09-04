@@ -38,6 +38,7 @@ require_once MEMBEXA_DIR . 'includes/class-bkash.php';
 require_once MEMBEXA_DIR . 'includes/class-gateways.php';
 require_once MEMBEXA_DIR . 'includes/class-access.php';
 require_once MEMBEXA_DIR . 'includes/class-commerce.php';
+require_once MEMBEXA_DIR . 'includes/class-commerce-lifecycle.php';
 require_once MEMBEXA_DIR . 'includes/class-shortcodes.php';
 require_once MEMBEXA_DIR . 'includes/class-admin.php';
 require_once MEMBEXA_DIR . 'includes/class-integrations-admin.php';
