@@ -24,6 +24,8 @@ function bootstrap() {
 		add_action( 'admin_notices', __NAMESPACE__ . '\\dependency_notice' );
 		return;
 	}
+
+	require_once __DIR__ . '/includes/class-bkash.php';
 	maybe_migrate();
 	( new \Membexa\Bkash() )->hooks();
 
