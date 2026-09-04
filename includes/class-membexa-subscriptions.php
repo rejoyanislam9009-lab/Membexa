@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Subscriptions {
 	public function hooks() {
-		add_action( 'membexa_daily_maintenance', array( $this, 'expire_due_subscriptions' ) );
+		add_action( 'membexa_daily_maintenance', array( $this, 'daily_maintenance' ) );
 	}
 
 	public static function create( $user_id, $plan_id, $status = 'pending', $gateway = 'free', $external_id = '' ) {
@@ -79,7 +79,7 @@ final class Subscriptions {
 			$data['ends_at'] = gmdate( 'Y-m-d H:i:s', absint( $ends_at ) );
 		}
 		$updated = $wpdb->update( DB::subscriptions_table(), $data, array( 'id' => absint( $subscription_id ) ) );
-		if ( false !== $updated && 'active' !== $subscription->status ) {
+		if ( false !== $updated && ! in_array( $subscription->status, array( 'active', 'trialing' ), true ) ) {
 			Emails::membership_activated( $subscription->user_id, $subscription->plan_id );
 		}
 		return false !== $updated;
@@ -87,16 +87,32 @@ final class Subscriptions {
 
 	public static function update_status_by_external_id( $external_id, $status, $ends_at = null, $cancel_at_period_end = null ) {
 		global $wpdb;
-		$allowed = array( 'pending', 'active', 'trialing', 'past_due', 'canceled', 'expired' );
-		$status  = in_array( $status, $allowed, true ) ? $status : 'pending';
-		$data    = array( 'status' => $status, 'updated_at' => current_time( 'mysql', true ) );
+		$allowed      = array( 'pending', 'active', 'trialing', 'past_due', 'canceled', 'expired' );
+		$status       = in_array( $status, $allowed, true ) ? $status : 'pending';
+		$external_id  = sanitize_text_field( $external_id );
+		$subscription = self::get_by_external_id( $external_id );
+		if ( ! $subscription ) {
+			return false;
+		}
+		$data = array( 'status' => $status, 'updated_at' => current_time( 'mysql', true ) );
 		if ( $ends_at ) {
 			$data['ends_at'] = gmdate( 'Y-m-d H:i:s', absint( $ends_at ) );
 		}
 		if ( null !== $cancel_at_period_end ) {
 			$data['cancel_at_period_end'] = $cancel_at_period_end ? 1 : 0;
 		}
-		return $wpdb->update( DB::subscriptions_table(), $data, array( 'gateway_external_id' => sanitize_text_field( $external_id ) ) );
+		$updated = $wpdb->update( DB::subscriptions_table(), $data, array( 'id' => (int) $subscription->id ) );
+		if ( false === $updated ) {
+			return false;
+		}
+		$was_active = in_array( $subscription->status, array( 'active', 'trialing' ), true );
+		$is_active  = in_array( $status, array( 'active', 'trialing' ), true );
+		if ( ! $was_active && $is_active ) {
+			Emails::membership_activated( $subscription->user_id, $subscription->plan_id );
+		} elseif ( $was_active && 'canceled' === $status ) {
+			Emails::membership_canceled( $subscription->user_id, $subscription->plan_id );
+		}
+		return true;
 	}
 
 	public static function cancel_local( $subscription_id ) {
@@ -150,15 +166,27 @@ final class Subscriptions {
 			'currency'        => '',
 			'status'          => '',
 		);
-		$data = wp_parse_args( $data, $defaults );
+		$data        = wp_parse_args( $data, $defaults );
+		$gateway     = sanitize_key( $data['gateway'] );
+		$external_id = sanitize_text_field( $data['external_id'] );
+		$type        = sanitize_key( $data['type'] );
+		$table       = DB::transactions_table();
+
+		if ( $external_id ) {
+			$exists = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE gateway = %s AND external_id = %s AND type = %s", $gateway, $external_id, $type ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			if ( $exists ) {
+				return true;
+			}
+		}
+
 		return (bool) $wpdb->insert(
-			DB::transactions_table(),
+			$table,
 			array(
 				'user_id'         => absint( $data['user_id'] ),
 				'subscription_id' => absint( $data['subscription_id'] ),
-				'gateway'         => sanitize_key( $data['gateway'] ),
-				'external_id'     => sanitize_text_field( $data['external_id'] ),
-				'type'            => sanitize_key( $data['type'] ),
+				'gateway'         => $gateway,
+				'external_id'     => $external_id,
+				'type'            => $type,
 				'amount'          => (float) $data['amount'],
 				'currency'        => strtoupper( sanitize_text_field( $data['currency'] ) ),
 				'status'          => sanitize_key( $data['status'] ),
@@ -167,10 +195,12 @@ final class Subscriptions {
 		);
 	}
 
-	public function expire_due_subscriptions() {
+	public function daily_maintenance() {
 		global $wpdb;
-		$table = DB::subscriptions_table();
-		$now   = current_time( 'mysql', true );
+		$table  = DB::subscriptions_table();
+		$now    = current_time( 'mysql', true );
+		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( 2 * DAY_IN_SECONDS ) );
 		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET status = 'expired', updated_at = %s WHERE status IN ('active','trialing') AND ends_at IS NOT NULL AND ends_at < %s", $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( $wpdb->prepare( "UPDATE {$table} SET status = 'expired', updated_at = %s WHERE status = 'pending' AND gateway = 'stripe' AND created_at < %s", $now, $cutoff ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 }
