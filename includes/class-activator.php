@@ -92,8 +92,7 @@ final class Activator {
 			);
 		}
 
-		Account::register_endpoint();
-		flush_rewrite_rules( false );
+		update_option( 'membexa_flush_rewrite_rules', 1, false );
 		update_option( 'membexa_version', MEMBEXA_VERSION );
 
 		if ( ! wp_next_scheduled( 'membexa_daily_maintenance' ) ) {
@@ -111,6 +110,6 @@ final class Activator {
 		if ( $timestamp ) {
 			wp_unschedule_event( $timestamp, 'membexa_daily_maintenance' );
 		}
-		flush_rewrite_rules( false );
+		update_option( 'membexa_flush_rewrite_rules', 1, false );
 	}
 }
