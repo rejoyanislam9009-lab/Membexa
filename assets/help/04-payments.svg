@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Membexa payment setup</title>
+  <desc id="desc">Annotated visual comparing Stripe, PayPal, and bKash setup requirements in Membexa.</desc>
+  <rect width="1200" height="720" fill="#f6f7f7"/>
+  <text x="55" y="68" font-family="Arial, sans-serif" font-size="31" font-weight="700" fill="#1d2327">Payments / পেমেন্ট সেটআপ</text>
+  <text x="55" y="105" font-family="Arial, sans-serif" font-size="18" fill="#50575e">Membexa → Settings → Payments</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="55" y="145" width="340" height="430" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+    <circle cx="95" cy="190" r="24" fill="#2271b1"/><text x="89" y="198" font-size="20" font-weight="700" fill="#fff">1</text>
+    <text x="135" y="198" font-size="27" font-weight="700" fill="#1d2327">Stripe</text>
+    <text x="85" y="245" font-size="17" font-weight="700" fill="#1d2327">Required</text>
+    <text x="85" y="278" font-size="16" fill="#50575e">• Secret Key</text>
+    <text x="85" y="308" font-size="16" fill="#50575e">• Webhook Signing Secret</text>
+    <text x="85" y="338" font-size="16" fill="#50575e">• Stripe Price ID on each plan</text>
+    <rect x="85" y="380" width="280" height="70" rx="8" fill="#f0f6fc"/>
+    <text x="105" y="408" font-size="15" fill="#135e96">One-time + recurring</text>
+    <text x="105" y="434" font-size="15" fill="#135e96">Hosted Stripe Checkout</text>
+    <text x="85" y="495" font-size="15" fill="#50575e">Use Stripe test keys first.</text>
+    <text x="85" y="523" font-size="15" fill="#50575e">আগে test key দিয়ে পরীক্ষা করুন।</text>
+
+    <rect x="430" y="145" width="340" height="430" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+    <circle cx="470" cy="190" r="24" fill="#2271b1"/><text x="464" y="198" font-size="20" font-weight="700" fill="#fff">2</text>
+    <text x="510" y="198" font-size="27" font-weight="700" fill="#1d2327">PayPal</text>
+    <text x="460" y="245" font-size="17" font-weight="700" fill="#1d2327">Required</text>
+    <text x="460" y="278" font-size="16" fill="#50575e">• Client ID</text>
+    <text x="460" y="308" font-size="16" fill="#50575e">• Client Secret</text>
+    <text x="460" y="338" font-size="16" fill="#50575e">• Webhook ID</text>
+    <text x="460" y="368" font-size="16" fill="#50575e">• P-... Plan ID for recurring</text>
+    <rect x="460" y="405" width="280" height="70" rx="8" fill="#f0f6fc"/>
+    <text x="480" y="433" font-size="15" fill="#135e96">One-time/Lifetime: no Plan ID</text>
+    <text x="480" y="459" font-size="15" fill="#135e96">Monthly/Yearly: Plan ID required</text>
+    <text x="460" y="523" font-size="15" fill="#50575e">Keep Sandbox enabled while testing.</text>
+
+    <rect x="805" y="145" width="340" height="430" rx="16" fill="#fff" stroke="#c3c4c7" stroke-width="2"/>
+    <circle cx="845" cy="190" r="24" fill="#2271b1"/><text x="839" y="198" font-size="20" font-weight="700" fill="#fff">3</text>
+    <text x="885" y="198" font-size="27" font-weight="700" fill="#1d2327">bKash</text>
+    <text x="835" y="245" font-size="17" font-weight="700" fill="#1d2327">Merchant API required</text>
+    <text x="835" y="278" font-size="16" fill="#50575e">• Username</text>
+    <text x="835" y="308" font-size="16" fill="#50575e">• Password</text>
+    <text x="835" y="338" font-size="16" fill="#50575e">• App Key</text>
+    <text x="835" y="368" font-size="16" fill="#50575e">• App Secret</text>
+    <rect x="835" y="405" width="280" height="70" rx="8" fill="#fff8e5" stroke="#dba617"/>
+    <text x="855" y="433" font-size="15" fill="#664d03">BDT only</text>
+    <text x="855" y="459" font-size="15" fill="#664d03">One-time / Lifetime only</text>
+    <text x="835" y="510" font-size="15" fill="#50575e">Personal bKash number ≠ API account.</text>
+    <text x="835" y="538" font-size="15" fill="#50575e">Merchant onboarding is required.</text>
+  </g>
+
+  <rect x="130" y="615" width="940" height="60" rx="10" fill="#fff" stroke="#72aee6"/>
+  <text x="160" y="652" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#135e96">Always complete one sandbox/test payment before switching credentials or Sandbox mode to Live.</text>
+</svg>
