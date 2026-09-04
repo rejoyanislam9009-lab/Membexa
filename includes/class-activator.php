@@ -92,6 +92,7 @@ final class Activator {
 			);
 		}
 
+		update_option( 'membexa_setup_pages_pending', 1, false );
 		update_option( 'membexa_flush_rewrite_rules', 1, false );
 		update_option( 'membexa_version', MEMBEXA_VERSION );
 
