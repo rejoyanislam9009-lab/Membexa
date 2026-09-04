@@ -91,7 +91,8 @@ final class Shortcodes {
 	/** Start checkout for an existing WordPress user. */
 	private function process_checkout() {
 		if ( ! is_user_logged_in() ) {
-			auth_redirect();
+			wp_safe_redirect( Account::login_url( wp_get_referer() ? wp_get_referer() : home_url( '/' ) ) );
+			exit;
 		}
 
 		$plan    = Plan::get( isset( $_POST['plan_id'] ) ? absint( $_POST['plan_id'] ) : 0 );
@@ -139,7 +140,8 @@ final class Shortcodes {
 	/** Cancel a member-owned subscription. */
 	private function process_cancel() {
 		if ( ! is_user_logged_in() ) {
-			auth_redirect();
+			wp_safe_redirect( Account::login_url( wp_get_referer() ? wp_get_referer() : home_url( '/' ) ) );
+			exit;
 		}
 		$subscription = Subscriptions::get( isset( $_POST['subscription_id'] ) ? absint( $_POST['subscription_id'] ) : 0 );
 		if ( ! $subscription || get_current_user_id() !== (int) $subscription->user_id ) {
@@ -160,9 +162,12 @@ final class Shortcodes {
 	 * @return string
 	 */
 	public function pricing( $atts ) {
-		$atts = shortcode_atts( array( 'register_url' => '' ), $atts, 'membexa_pricing' );
-		$register_url = $atts['register_url'] ? esc_url_raw( $atts['register_url'] ) : get_permalink();
-		$plans        = Plan::all();
+		$atts                = shortcode_atts( array( 'register_url' => '' ), $atts, 'membexa_pricing' );
+		$custom_register_url = $atts['register_url'] ? esc_url_raw( $atts['register_url'] ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only plan highlight carried through account login/registration.
+		$selected_id = isset( $_GET['membexa_plan'] ) ? absint( $_GET['membexa_plan'] ) : 0;
+		$selected_id = $selected_id && Plan::get( $selected_id ) ? $selected_id : 0;
+		$plans       = Plan::all();
 		if ( empty( $plans ) ) {
 			return '<div class="membexa-notice">' . esc_html__( 'No membership plans are available yet.', 'membexa' ) . '</div>';
 		}
@@ -173,7 +178,7 @@ final class Shortcodes {
 		<div class="membexa-pricing-grid">
 			<?php foreach ( $plans as $plan ) : ?>
 				<?php $gateways = Gateways::available_for_plan( $plan ); ?>
-				<article class="membexa-plan-card">
+				<article class="membexa-plan-card <?php echo esc_attr( $selected_id === (int) $plan['id'] ? 'membexa-plan-selected' : '' ); ?>">
 					<h3><?php echo esc_html( $plan['name'] ); ?></h3>
 					<div class="membexa-price"><?php echo esc_html( $this->format_price( $plan ) ); ?></div>
 					<?php if ( $plan['description'] ) : ?>
@@ -189,7 +194,8 @@ final class Shortcodes {
 					<?php if ( is_user_logged_in() ) : ?>
 						<?php $this->pricing_checkout_form( $plan, $gateways ); ?>
 					<?php else : ?>
-						<a class="membexa-button" href="<?php echo esc_url( add_query_arg( 'membexa_plan', $plan['id'], $register_url ) ); ?>"><?php esc_html_e( 'Join now', 'membexa' ); ?></a>
+						<?php $join_url = $custom_register_url ? add_query_arg( 'membexa_plan', $plan['id'], $custom_register_url ) : Account::register_url( $plan['id'] ); ?>
+						<a class="membexa-button" href="<?php echo esc_url( $join_url ); ?>"><?php esc_html_e( 'Join now', 'membexa' ); ?></a>
 					<?php endif; ?>
 				</article>
 			<?php endforeach; ?>
@@ -233,6 +239,12 @@ final class Shortcodes {
 
 	/** Render the registration form. */
 	public function register_form() {
+		if ( Account::uses_woocommerce() && Account::woo_registration_enabled() ) {
+			$url = Account::register_url();
+			/* translators: %s: WooCommerce My Account URL. */
+			$message = sprintf( __( 'This site uses WooCommerce My Account for registration. <a href="%s">Create or access your account here</a>.', 'membexa' ), esc_url( $url ) );
+			return '<div class="membexa-notice">' . wp_kses_post( $message ) . '</div>';
+		}
 		if ( is_user_logged_in() ) {
 			return '<p>' . esc_html__( 'You are already signed in.', 'membexa' ) . '</p>';
 		}
@@ -286,6 +298,11 @@ final class Shortcodes {
 		if ( is_user_logged_in() ) {
 			return '<p>' . esc_html__( 'You are already signed in.', 'membexa' ) . '</p>';
 		}
+		if ( Account::uses_woocommerce() ) {
+			/* translators: %s: WooCommerce My Account URL. */
+			$message = sprintf( __( 'This site uses WooCommerce My Account for sign in. <a href="%s">Sign in here</a>.', 'membexa' ), esc_url( Account::login_url() ) );
+			return '<div class="membexa-notice">' . wp_kses_post( $message ) . '</div>';
+		}
 		ob_start();
 		wp_login_form( array( 'echo' => true ) );
 		return ob_get_clean();
@@ -295,7 +312,7 @@ final class Shortcodes {
 	public function account() {
 		if ( ! is_user_logged_in() ) {
 			/* translators: %s: WordPress login URL. */
-			$message = sprintf( __( 'Please <a href="%s">sign in</a> to view your membership account.', 'membexa' ), esc_url( wp_login_url( get_permalink() ) ) );
+			$message = sprintf( __( 'Please <a href="%s">sign in</a> to view your membership account.', 'membexa' ), esc_url( Account::login_url( get_permalink() ) ) );
 			return '<p>' . wp_kses_post( $message ) . '</p>';
 		}
 
@@ -332,7 +349,9 @@ final class Shortcodes {
 								</td>
 								<td><?php echo $subscription->ends_at ? esc_html( get_date_from_gmt( $subscription->ends_at, get_option( 'date_format' ) ) ) : '—'; ?></td>
 								<td>
-									<?php if ( in_array( $subscription->status, array( 'active', 'trialing' ), true ) && ! $subscription->cancel_at_period_end ) : ?>
+									<?php if ( 'woocommerce' === $subscription->gateway ) : ?>
+										<small><?php esc_html_e( 'Managed by WooCommerce order', 'membexa' ); ?></small>
+									<?php elseif ( in_array( $subscription->status, array( 'active', 'trialing' ), true ) && ! $subscription->cancel_at_period_end ) : ?>
 										<form method="post" onsubmit="return confirm('<?php echo esc_js( __( 'Cancel this membership?', 'membexa' ) ); ?>');">
 											<?php wp_nonce_field( 'membexa_frontend_action', 'membexa_nonce' ); ?>
 											<input type="hidden" name="membexa_action" value="cancel">
@@ -376,8 +395,7 @@ final class Shortcodes {
 
 	/** Redirect to the configured account page with a notice code. */
 	private function redirect_account( $code ) {
-		$general = Settings::general();
-		$url     = $general['account_page_id'] ? get_permalink( $general['account_page_id'] ) : ( wp_get_referer() ? wp_get_referer() : home_url( '/' ) );
+		$url = Account::account_url();
 		wp_safe_redirect( add_query_arg( 'membexa_notice', sanitize_key( $code ), $url ) );
 		exit;
 	}
@@ -388,6 +406,7 @@ final class Shortcodes {
 		$code     = isset( $_GET['membexa_notice'] ) ? sanitize_key( wp_unslash( $_GET['membexa_notice'] ) ) : '';
 		$messages = array(
 			'payment_success'      => __( 'Payment confirmed. Your membership access is being updated.', 'membexa' ),
+			'account_ready'        => __( 'Your account is ready. Choose the payment method for the selected membership plan to continue.', 'membexa' ),
 			'payment_pending'      => __( 'Your payment approval was received. Membership access will activate after the payment provider confirms the subscription.', 'membexa' ),
 			'payment_failed'       => __( 'The payment could not be confirmed. No membership access was activated.', 'membexa' ),
 			'payment_cancelled'    => __( 'Checkout was canceled. No membership access was activated.', 'membexa' ),
