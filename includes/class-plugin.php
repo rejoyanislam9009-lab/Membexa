@@ -47,17 +47,21 @@ final class Plugin {
 		$this->maybe_upgrade();
 
 		( new Settings() )->hooks();
+		( new Account() )->hooks();
 		( new Plan() )->hooks();
 		( new Subscriptions() )->hooks();
 		( new Stripe() )->hooks();
 		( new PayPal() )->hooks();
 		( new Bkash() )->hooks();
 		( new Access() )->hooks();
+		( new Commerce() )->hooks();
+		( new Commerce_Lifecycle() )->hooks();
 		( new Shortcodes() )->hooks();
 		( new Privacy() )->hooks();
 
 		if ( is_admin() ) {
 			( new Admin() )->hooks();
+			( new Integrations_Admin() )->hooks();
 			( new Help() )->hooks();
 		}
 
@@ -69,6 +73,7 @@ final class Plugin {
 		$installed = (string) get_option( 'membexa_version', '' );
 		if ( MEMBEXA_VERSION !== $installed ) {
 			DB::install();
+			update_option( 'membexa_flush_rewrite_rules', 1, false );
 			update_option( 'membexa_version', MEMBEXA_VERSION );
 		}
 

@@ -15,6 +15,11 @@
 	margin-top: 0;
 }
 
+.membexa-plan-card.membexa-plan-selected {
+	outline: 3px solid #2271b1;
+	outline-offset: 3px;
+}
+
 .membexa-price {
 	margin: 12px 0;
 	font-size: 1.5em;

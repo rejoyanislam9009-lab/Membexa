@@ -37,10 +37,22 @@ foreach ( $membexa_plan_ids as $membexa_plan_id ) {
 
 delete_post_meta_by_key( '_membexa_restricted' );
 delete_post_meta_by_key( '_membexa_plan_ids' );
+delete_post_meta_by_key( '_membexa_grant_plans' );
+delete_post_meta_by_key( '_membexa_require_plans' );
+delete_post_meta_by_key( '_membexa_restrict_view' );
+delete_post_meta_by_key( '_membexa_restrict_purchase' );
+delete_post_meta_by_key( '_membexa_granted_subscription_ids' );
+
+delete_metadata( 'term', 0, '_membexa_grant_plans', '', true );
+delete_metadata( 'term', 0, '_membexa_require_plans', '', true );
+delete_metadata( 'term', 0, '_membexa_restrict_view', '', true );
+delete_metadata( 'term', 0, '_membexa_restrict_purchase', '', true );
 
 delete_option( 'membexa_general' );
 delete_option( 'membexa_payments' );
 delete_option( 'membexa_emails' );
 delete_option( 'membexa_data' );
+delete_option( 'membexa_integrations' );
 delete_option( 'membexa_version' );
+delete_option( 'membexa_flush_rewrite_rules' );
 wp_clear_scheduled_hook( 'membexa_daily_maintenance' );
