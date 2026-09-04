@@ -25,6 +25,7 @@ function bootstrap() {
 		return;
 	}
 
+	require_once __DIR__ . '/includes/class-stripe.php';
 	maybe_migrate();
 	( new \Membexa\Stripe() )->hooks();
 
